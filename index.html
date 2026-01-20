@@ -2,28 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DEAD ZONE: SURVIVOR COLONIES - Aiden B.</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; background: #050505; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        canvas { display: block; }
-        #ui { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.95); z-index: 100; }
-        .menu { background: #111; padding: 30px; border-radius: 15px; border: 2px solid #e74c3c; width: 380px; text-align: center; box-shadow: 0 0 40px rgba(231, 76, 60, 0.2); }
-        h1 { color: #e74c3c; margin: 0; font-size: 36px; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 10px #e74c3c; }
-        .credit { color: #666; font-size: 14px; margin-bottom: 25px; }
-        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 6px; background: #e74c3c; color: white; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
-        button:hover { background: #ff4d3a; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4); }
-        button.blue { background: #3498db; }
-        button.orange { background: #f39c12; }
-        button.grey { background: #444; }
-        input { width: 92%; padding: 12px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333; text-align: center; border-radius: 5px; box-sizing: border-box; }
+        :root { --primary: #ff4d4d; --bg: #050505; --card: #111; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        canvas { display: block; filter: contrast(1.2) brightness(0.9); }
+
+        /* --- STYLISH MENU --- */
+        #ui { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; 
+              background: radial-gradient(circle, rgba(20,0,0,0.4) 0%, rgba(0,0,0,0.95) 100%); z-index: 100; transition: 0.5s; }
+        
+        .menu-card { background: var(--card); padding: 50px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
+                     text-align: center; width: 420px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,1);
+                     overflow: hidden; animation: fadeIn 1s ease-out; }        
+        .menu-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; 
+                             background: linear-gradient(90deg, transparent, var(--primary), transparent); animation: scan 3s infinite linear; }
+
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+        h1 { color: var(--primary); margin: 0; font-size: 42px; text-transform: uppercase; letter-spacing: 6px;
+             font-weight: 900; position: relative; animation: glitch 4s infinite; }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 red, -2px 0 blue; }
+            1% { text-shadow: -2px 0 red, 2px 0 blue; }
+            2% { text-shadow: 0 0 white; }
+            100% { text-shadow: 0 0 white; }
+        }
+
+        .credit { color: #555; font-size: 12px; margin-bottom: 30px; letter-spacing: 2px; text-transform: uppercase; }
+
+        button { width: 100%; padding: 16px; margin: 10px 0; border: 1px solid rgba(255,77,77,0.3); border-radius: 2px;
+                 background: rgba(255,77,77,0.05); color: #fff; font-weight: bold; cursor: pointer; 
+                 font-size: 14px; letter-spacing: 2px; text-transform: uppercase; transition: 0.3s; position: relative; }
+        
+        button:hover { background: var(--primary); color: #000; box-shadow: 0 0 20px rgba(255,77,77,0.4); transform: translateX(5px); }
+        
+        .btn-sub { background: rgba(52, 152, 219, 0.1); border-color: rgba(52, 152, 219, 0.3); }
+        .btn-sub:hover { background: #3498db; border-color: #3498db; color: #fff; box-shadow: 0 0 20px rgba(52, 152, 219, 0.4); }
+
+        input { width: 100%; padding: 14px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #222; 
+                text-align: center; border-radius: 2px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+
         #hud { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
-        .hp-card { background: rgba(0,0,0,0.8); padding: 10px; border-left: 5px solid #e74c3c; margin-bottom: 8px; border-radius: 4px; min-width: 160px; }
-        #respawn-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; color: #e74c3c; font-weight: bold; text-shadow: 0 0 20px #000; display: none; pointer-events: none; }
+        .hp-card { background: rgba(0,0,0,0.8); padding: 12px; border-left: 3px solid var(--primary); margin-bottom: 8px; font-size: 14px; letter-spacing: 1px; }
+
+        #respawn-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: var(--primary); font-weight: 900; pointer-events: none; }
         .hidden { display: none !important; }
-        #status { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #e74c3c; font-weight: bold; z-index: 101; pointer-events: none; }
-        hr { border: 0; border-top: 1px solid #333; margin: 15px 0; }
+        #status { position: absolute; bottom: 30px; width: 100%; text-align: center; color: var(--primary); font-size: 12px; letter-spacing: 2px; }
+        
+        /* Audio Toggle */
+        #mute-btn { position: absolute; bottom: 20px; right: 20px; background: none; border: 1px solid #333; color: #555; padding: 5px 10px; width: auto; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -32,73 +64,129 @@
         <div id="stats-list"></div>
     </div>
 
-    <div id="respawn-timer">RESPAWNING...</div>
-    <div id="status"></div>
+    <div id="respawn-timer" class="hidden">5</div>
+    <div id="status">SYSTEMS ONLINE</div>
 
     <div id="ui">
-        <div id="menu-main" class="menu">
+        <div id="menu-main" class="menu-card">
             <h1>DEAD ZONE</h1>
-            <div class="credit">A 2D Masterpiece By Aiden B.</div>
-            <button onclick="startMode('single', false)">SINGLE PLAYER</button>
-            <button class="orange" onclick="startMode('split', false)">COUCH CO-OP</button>
-            <button class="orange" onclick="startMode('split', true)">SPLIT SCREEN PVP</button>
-            <hr>
-            <button class="blue" onclick="showMenu('menu-public')">PUBLIC COLONIES (ONLINE)</button>
-            <button class="grey" onclick="showMenu('menu-private')">PRIVATE CITY (ONLINE)</button>
+            <div class="credit">A Survival Experience By Aiden B.</div>
+            <button onclick="startMode('single', false)">Start Mission</button>
+            <button class="btn-sub" onclick="startMode('split', false)">Split-Screen Co-op</button>
+            <button class="btn-sub" onclick="startMode('split', true)">Split-Screen Deathmatch</button>
+            <button onclick="showMenu('menu-online')">Access Network</button>
         </div>
 
-        <div id="menu-public" class="menu hidden">
-            <h1>PUBLIC CITIES</h1>
-            <button onclick="connectOnline('Alpha', false)">CITY ALPHA (CO-OP)</button>
-            <button onclick="connectOnline('Beta', true)">CITY BETA (PVP)</button>
-            <button class="grey" onclick="showMenu('menu-main')">BACK</button>
+        <div id="menu-online" class="menu-card hidden">
+            <h1>Network</h1>
+            <div class="credit">Select a Colony or Private Frequency</div>
+            <button onclick="connectOnline('Alpha', false)">Colony Alpha (Co-op)</button>
+            <button onclick="connectOnline('Beta', true)">Colony Beta (PVP)</button>
+            <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+            <input type="text" id="custom-id" placeholder="Private Frequency">
+            <button class="btn-sub" onclick="startMode('host', false)">Host Private</button>
+            <input type="text" id="join-id" placeholder="Frequency Code">
+            <button class="btn-sub" onclick="startMode('join', false)">Join Frequency</button>
+            <button class="btn-sub" style="background:#333" onclick="showMenu('menu-main')">Return</button>
         </div>
-
-        <div id="menu-private" class="menu hidden">
-            <h1>PRIVATE CITY</h1>
-            <input type="text" id="custom-id" placeholder="Create Custom Code">
-            <button onclick="startMode('host', false)">HOST CO-OP</button>
-            <button class="orange" onclick="startMode('host', true)">HOST PVP</button>
-            <hr>
-            <input type="text" id="join-id" placeholder="Enter Friend's Code">
-            <button class="blue" onclick="startMode('join', false)">JOIN CITY</button>
-            <button class="grey" onclick="showMenu('menu-main')">BACK</button>
-        </div>    
     </div>
+
+    <button id="mute-btn" onclick="toggleAudio()">Audio: OFF</button>
     <canvas id="gameCanvas"></canvas>
 
 <script>
+    /** --- AUDIO ENGINE (Procedural Synth) --- **/
+    let audioCtx = null;
+    let mainGain = null;    let isMuted = true;
+
+    function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        mainGain = audioCtx.createGain();
+        mainGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        mainGain.connect(audioCtx.destination);
+        playAmbient();
+    }
+
+    function playAmbient() {
+        const osc = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();        const lfoGain = audioCtx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(40, audioCtx.currentTime);
+        
+        lfo.frequency.setValueAtTime(0.2, audioCtx.currentTime);
+        lfoGain.gain.setValueAtTime(10, audioCtx.currentTime);
+        
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(200, audioCtx.currentTime);
+        
+        osc.connect(filter);
+        filter.connect(mainGain);
+        
+        osc.start();
+        lfo.start();
+    }
+
+    function playSFX(freq, type, dur) {
+        if (!audioCtx || isMuted) return;
+        const osc = audioCtx.createOscillator();        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1, audioCtx.currentTime + dur);
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
+        osc.connect(g);
+        g.connect(mainGain);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function toggleAudio() {
+        if (!audioCtx) initAudio();
+        isMuted = !isMuted;
+        mainGain.gain.setTargetAtTime(isMuted ? 0 : 0.1, audioCtx.currentTime, 0.1);
+        document.getElementById('mute-btn').innerText = isMuted ? "Audio: OFF" : "Audio: ON";
+    }
+
+    /** --- GAME ENGINE --- **/
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const COLORS = { p1: '#3498db', p2: '#e74c3c', ground: '#1a1a1a', zombie: '#4ade80', runner: '#f1c40f', tank: '#8e44ad' };
+    const COLORS = { p1: '#3498db', p2: '#e74c3c', ground: '#111', zombie: '#4ade80', runner: '#f1c40f', tank: '#8e44ad' };
     const SETTINGS = { gravity: 0.5, friction: 0.8, spawnRate: 0.012, jumpPower: -17 };
 
     let peer = null, hostConn = null, clientConns = [];
-    let isHost = false, gameActive = false, myId = null, isSplit = false, isPVP = false;    let cameraX1 = 0, cameraX2 = 0, players = {}, zombies = [], bullets = [], platforms = [];
+    let isHost = false, gameActive = false, myId = null, isSplit = false, isPVP = false;
+    let cameraX1 = 0, cameraX2 = 0, players = {}, zombies = [], bullets = [], platforms = [];
     const keys = {};
 
-    window.onkeydown = e => keys[e.code] = true;
+    window.onkeydown = e => { keys[e.code] = true; if(e.code === 'Space') playSFX(150, 'square', 0.1); };
     window.onkeyup = e => keys[e.code] = false;
 
     function generateLevel() {
         platforms = [];
-        let curX = 0;
-        for(let i=0; i<100; i++) {
-            let width = 600 + Math.random() * 400;
+        let curX = 0;        for(let i=0; i<100; i++) {
+            let width = 600 + Math.random() * 600;
             platforms.push({ x: curX, y: canvas.height - 120, w: width, h: 200 });
-            curX += width + 130 + Math.random() * 50;
+            curX += width + 140 + Math.random() * 60;
         }
     }
 
     function showMenu(id) {
-        document.querySelectorAll('.menu').forEach(m => m.classList.add('hidden'));
+        document.querySelectorAll('.menu-card').forEach(m => m.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
+        playSFX(400, 'sine', 0.05);
     }
 
     function startMode(mode, pvp) {
+        initAudio();
         isPVP = pvp;
         generateLevel();
         if (mode === 'single') { isHost = true; myId = 'p1'; players[myId] = createPlayer(myId, 0); launch(); }
@@ -107,8 +195,9 @@
     }
 
     function connectOnline(name, pvp) {
+        initAudio();
         isPVP = pvp; generateLevel();
-        initPeer(`dead-zone-v9-${name.toLowerCase()}`, true);
+        initPeer(`dead-zone-v10-${name.toLowerCase()}`, true);
     }
 
     function initPeer(id, isPublic = false) {
@@ -143,11 +232,11 @@
                 }
             });
         });
-    }
-
-    function launch() {
+    }    function launch() {
         gameActive = true;
-        document.getElementById('ui').classList.add('hidden');        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('ui').style.opacity = '0';
+        setTimeout(() => document.getElementById('ui').classList.add('hidden'), 500);
+        document.getElementById('hud').classList.remove('hidden');
     }
 
     function createPlayer(id, idx) {
@@ -158,8 +247,9 @@
     function spawnZombie() {
         if (isPVP) return;
         const types = [
-            { speed: 1.3, hp: 1, color: COLORS.zombie, w: 30, h: 50 },            { speed: 2.9, hp: 0.5, color: COLORS.runner, w: 25, h: 40 },
-            { speed: 0.7, hp: 7, color: COLORS.tank, w: 50, h: 70 }
+            { speed: 1.3, hp: 1, color: COLORS.zombie, w: 30, h: 50 },
+            { speed: 3.0, hp: 0.5, color: COLORS.runner, w: 25, h: 40 },
+            { speed: 0.7, hp: 8, color: COLORS.tank, w: 50, h: 70 }
         ];
         const t = types[Math.floor(Math.random() * types.length)];
         const x = cameraX1 + canvas.width + 100;
@@ -174,7 +264,8 @@
                 players['p1'].inputs = { l: keys['KeyA'], r: keys['KeyD'], j: keys['KeyW'], s: keys['Space'] };
                 players['p2'].inputs = { l: keys['ArrowLeft'], r: keys['ArrowRight'], j: keys['ArrowUp'], s: keys['Enter'] };
             } else {
-                const pid = myId || 'p1';                players[pid].inputs = { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] };
+                const pid = myId || 'p1';
+                players[pid].inputs = { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] };
             }
 
             for (let id in players) {
@@ -190,9 +281,11 @@
                     continue;
                 }
 
-                if (p.inputs.l) p.vx -= 1.3; if (p.inputs.r) p.vx += 1.3;                if (p.inputs.j && p.grounded) { p.vy = SETTINGS.jumpPower; p.grounded = false; }
+                if (p.inputs.l) p.vx -= 1.3; if (p.inputs.r) p.vx += 1.3;
+                if (p.inputs.j && p.grounded) { p.vy = SETTINGS.jumpPower; p.grounded = false; }
                 p.vx *= SETTINGS.friction; p.vy += SETTINGS.gravity;
-                p.x += p.vx; p.y += p.vy;                p.grounded = false;
+                p.x += p.vx; p.y += p.vy;
+                p.grounded = false;
 
                 platforms.forEach(plat => {
                     if (p.x + 30 > plat.x && p.x < plat.x + plat.w && p.y + 50 > plat.y && p.y + 50 < plat.y + 30 && p.vy >= 0) {
@@ -201,11 +294,12 @@
                 });
 
                 if (p.y > canvas.height + 100) p.hp = 0; 
-                if (p.hp <= 0) { p.dead = true; p.respawnAt = Date.now() + 5000; }
+                if (p.hp <= 0) { p.dead = true; p.respawnAt = Date.now() + 5000; playSFX(50, 'sawtooth', 0.5); }
 
                 if (p.inputs.s && Date.now() - (p.lastShot || 0) > 250) {
                     bullets.push({ x: p.x + 15, y: p.y + 20, vx: p.vx >= 0 ? 16 : -16, owner: p.id });
                     p.lastShot = Date.now();
+                    playSFX(200, 'square', 0.1);
                 }
             }
 
@@ -219,8 +313,7 @@
                 for (let id in players) {
                     let p = players[id];
                     if (!p.dead && Math.abs(p.x - z.x) < 40 && Math.abs(p.y - z.y) < 50) p.hp -= 1.2;
-                }
-                if (z.y > canvas.height + 200 || z.x < cameraX1 - 500) zombies.splice(zi, 1);
+                }                if (z.y > canvas.height + 200 || z.x < cameraX1 - 500) zombies.splice(zi, 1);
             });
 
             bullets.forEach((b, bi) => {
@@ -237,8 +330,7 @@
                         if (!p.dead && p.id !== b.owner && Math.abs(b.x - p.x) < 30 && Math.abs(b.y - p.y) < 50) {
                             p.hp -= 20; bullets.splice(bi, 1);
                         }
-                    }
-                }
+                    }                }
                 if (Math.abs(b.x - cameraX1) > 2500) bullets.splice(bi, 1);
             });
 
@@ -252,9 +344,9 @@
             cameraX1 += (me.x - (isSplit ? canvas.width/4 : canvas.width/2) - cameraX1) * 0.1;
             if (me.dead) {
                 const left = Math.ceil((me.respawnAt - Date.now()) / 1000);
-                document.getElementById('respawn-timer').style.display = 'block';
-                document.getElementById('respawn-timer').innerText = `RESPAWNING IN ${left > 0 ? left : 0}...`;
-            } else document.getElementById('respawn-timer').style.display = 'none';
+                document.getElementById('respawn-timer').classList.remove('hidden');
+                document.getElementById('respawn-timer').innerText = left > 0 ? left : 0;
+            } else document.getElementById('respawn-timer').classList.add('hidden');
         }
         if (isSplit && players['p2']) cameraX2 += (players['p2'].x - canvas.width/4 - cameraX2) * 0.1;
     }
@@ -264,18 +356,21 @@
             if (p.x - camX < canvas.width && p.x + p.w - camX > 0) {
                 ctx.fillStyle = COLORS.ground;
                 ctx.fillRect(p.x - camX, p.y, p.w, p.h);
-                ctx.fillStyle = '#e74c3c'; 
-                ctx.fillRect(p.x - camX, p.y, p.w, 5); 
+                ctx.fillStyle = '#ff4d4d'; 
+                ctx.fillRect(p.x - camX, p.y, p.w, 4); 
             }
         });
 
-        ctx.fillStyle = 'yellow';
-        bullets.forEach(b => ctx.fillRect(b.x - camX, b.y, 12, 4));        zombies.forEach(z => {
-            ctx.fillStyle = z.color;
+        bullets.forEach(b => {            ctx.fillStyle = '#fff';
+            ctx.fillRect(b.x - camX, b.y, 12, 4);
+            ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
+        });
+        ctx.shadowBlur = 0;
+
+        zombies.forEach(z => {            ctx.fillStyle = z.color;
             ctx.beginPath();
-            if(ctx.roundRect) ctx.roundRect(z.x - camX, z.y, z.w, z.h, 5); else ctx.rect(z.x - camX, z.y, z.w, z.h);
+            if(ctx.roundRect) ctx.roundRect(z.x - camX, z.y, z.w, z.h, 4); else ctx.rect(z.x - camX, z.y, z.w, z.h);
             ctx.fill();
-            ctx.fillStyle = 'red'; ctx.fillRect(z.x - camX + 5, z.y + 10, 4, 4); ctx.fillRect(z.x - camX + z.w - 9, z.y + 10, 4, 4);
         });
 
         for (let id in players) {
@@ -283,15 +378,19 @@
             if (!p.dead) {
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
-                if(ctx.roundRect) ctx.roundRect(p.x - camX, p.y, 30, 50, 8); else ctx.rect(p.x - camX, p.y, 30, 50);
+                if(ctx.roundRect) ctx.roundRect(p.x - camX, p.y, 30, 50, 4); else ctx.rect(p.x - camX, p.y, 30, 50);
                 ctx.fill();
-                ctx.fillStyle = 'white'; ctx.fillRect(p.x - camX + (p.vx >= 0 ? 18 : 5), p.y + 10, 7, 7);
-            }
-        }
+                ctx.fillStyle = '#fff'; ctx.fillRect(p.x - camX + (p.vx >= 0 ? 18 : 5), p.y + 10, 6, 6);
+            }        }
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Background Fog Effect
+        ctx.fillStyle = 'rgba(20,0,0,0.2)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
         if (!gameActive) return;
 
         if (isSplit) {
@@ -299,7 +398,7 @@
             drawWorld(cameraX1); ctx.restore();
             ctx.save(); ctx.translate(canvas.width/2, 0); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip();
             drawWorld(cameraX2); ctx.restore();
-            ctx.fillStyle = '#e74c3c'; ctx.fillRect(canvas.width/2-2, 0, 4, canvas.height);
+            ctx.fillStyle = '#ff4d4d'; ctx.fillRect(canvas.width/2-1, 0, 2, canvas.height);
         } else drawWorld(cameraX1);
 
         const stats = document.getElementById('stats-list');
@@ -307,8 +406,7 @@
         for (let id in players) {
             const p = players[id];
             const card = document.createElement('div'); card.className = 'hp-card';
-            card.style.borderLeftColor = p.color;
-            card.innerHTML = `<div style="font-size:10px">${id.substring(0,6).toUpperCase()}</div>${p.dead ? 'DEAD' : Math.ceil(p.hp) + ' HP'}`;
+            card.style.borderLeftColor = p.color;            card.innerHTML = `<div style="font-size:10px; color:#555">${id.substring(0,8).toUpperCase()}</div>${p.dead ? 'SIGNAL LOST' : Math.ceil(p.hp) + ' %'}`;
             stats.appendChild(card);
         }
     }
@@ -318,4 +416,3 @@
     window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
 </script>
 </body>
-</html>
