@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DEAD ZONE - Aiden B.</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        #ui { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.95); z-index: 100; }
+        .menu { background: #151515; padding: 30px; border-radius: 12px; border: 2px solid #e74c3c; width: 360px; text-align: center; }        h1 { color: #e74c3c; margin: 0; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; }
+        .credit { color: #666; font-size: 14px; margin-bottom: 25px; }
+        button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 4px; background: #e74c3c; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #ff4d3a; transform: scale(1.02); }
+        input { width: 90%; padding: 10px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #444; text-align: center; font-size: 16px; }
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+        .hp-card { background: rgba(0,0,0,0.7); padding: 8px; border-left: 4px solid #e74c3c; margin-bottom: 5px; min-width: 140px; font-weight: bold; }
+        .hidden { display: none !important; }
+        #status { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #e74c3c; font-weight: bold; z-index: 101; }
+    </style>
+</head>
+<body>
+
+    <div id="hud" class="hidden">        <div id="stats-list"></div>
+    </div>
+
+    <div id="status"></div>
+
+    <div id="ui">
+        <div id="menu-main" class="menu">
+            <h1>DEAD ZONE</h1>
+            <div class="credit">Developed by Aiden B.</div>
+            <button onclick="startSingle()">Single Player</button>
+            <button onclick="startSplitScreen()" style="background:#2ecc71">Split Screen (Local Co-op)</button>
+            <button onclick="showMenu('menu-public')" style="background:#3498db">Public Colonies (Online)</button>
+            <button onclick="showMenu('menu-private')" style="background:#444">Private Room</button>
+        </div>
+
+        <div id="menu-public" class="menu hidden">
+            <h1>Public Colonies</h1>
+            <button onclick="joinColony('Alpha')">Colony Alpha</button>
+            <button onclick="joinColony('Beta')">Colony Beta</button>
+            <button onclick="joinColony('Gamma')">Colony Gamma</button>            <button onclick="showMenu('menu-main')" style="background:#444">Back</button>
+        </div>
+
+        <div id="menu-private" class="menu hidden">
+            <h1>Private Room</h1>
+            <input type="text" id="custom-room-id" placeholder="Create Custom Code">
+            <button onclick="hostPrivate()">Host Private</button>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+            <input type="text" id="join-code" placeholder="Enter Friend's Code">
+            <button onclick="joinPrivate()" style="background:#3498db">Join Private</button>
+            <button onclick="showMenu('menu-main')" style="background:#444">Back</button>
+        </div>    </div>
+
+    <canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const SETTINGS = { gravity: 0.6, friction: 0.8, zombieSpeed: 0.5, spawnRate: 0.006 };
+const COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'];
+
+let peer = null, hostConn = null, clientConns = [];
+let isHost = false, gameActive = false, myId = null, isSplitScreen = false;
+let cameraX1 = 0, cameraX2 = 0, players = {}, zombies = [], bullets = [];
+const keys = {};
+
+window.onkeydown = e => keys[e.code] = true;
+window.onkeyup = e => keys[e.code] = false;
+
+function showMenu(id) {
+    document.querySelectorAll('.menu').forEach(m => m.classList.add('hidden'));    document.getElementById(id).classList.remove('hidden');
+}
+
+function setStatus(msg) { 
+    document.getElementById('status').innerText = msg;
+    setTimeout(() => document.getElementById('status').innerText = "", 5000);
+}
+
+/** --- MODES --- **/
+
+function startSingle() {
+    isHost = true; myId = 'p1';
+    players[myId] = createPlayer(myId, 0);
+    launchGame();
+}
+
+function startSplitScreen() {
+    isHost = true;    isSplitScreen = true;
+    players['p1'] = createPlayer('p1', 0);
+    players['p2'] = createPlayer('p2', 1);
+    launchGame();
+}
+
+function joinColony(name) {
+    const colonyId = `dead-zone-v5-${name.toLowerCase()}`;
+    initPeer(colonyId, true);
+}
+
+function hostPrivate() {
+    const customId = document.getElementById('custom-room-id').value.trim();
+    if (!customId) return alert("Enter a code");
+    initPeer(customId, false);
+}
+
+function joinPrivate() {
+    const code = document.getElementById('join-code').value.trim();
+    if (code) connectAsClient(code);
+}
+
+/** --- NETWORKING --- **/
+
+function initPeer(id, isPublic) {
+    peer = new Peer(id);
+    peer.on('open', (openedId) => {
+        myId = openedId; isHost = true;
+        players[openedId] = createPlayer(openedId, 0);
+        launchGame();
+    });
+    peer.on('error', (err) => {
+        if (err.type === 'unavailable-id' && isPublic) { peer.destroy(); connectAsClient(id); }
+        else { alert("ID Error. Try another code."); location.reload(); }
+    });
+    peer.on('connection', conn => {
+        clientConns.push(conn);
+        players[conn.peer] = createPlayer(conn.peer, clientConns.length);
+        conn.on('data', data => { if (data.type === 'INPUT') players[conn.peer].inputs = data.inputs; });
+        conn.on('open', () => conn.send({ type: 'SYNC', players, zombies, bullets, forceStart: true }));
+    });
+}
+
+function connectAsClient(targetId) {
+    isHost = false; peer = new Peer();
+    peer.on('open', id => {
+        myId = id; hostConn = peer.connect(targetId);
+        hostConn.on('open', () => launchGame());
+        hostConn.on('data', data => {
+            if (data.type === 'SYNC') {
+                players = data.players; zombies = data.zombies; bullets = data.bullets;
+                if(data.forceStart) launchGame();
+            }
+        });
+    });
+}
+
+function launchGame() {
+    gameActive = true;
+    document.getElementById('ui').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+}
+
+/** --- ENGINE --- **/
+
+function createPlayer(id, idx) {
+    return { id, x: 100, y: 0, vx: 0, vy: 0, color: COLORS[idx % 5], hp: 100, inputs: {}, grounded: false, lastShot: 0 };
+}function update() {
+    if (!gameActive) return;
+
+    if (isHost) {
+        // Map Inputs
+        if (isSplitScreen) {
+            players['p1'].inputs = { l: keys['KeyA'], r: keys['KeyD'], j: keys['KeyW'], s: keys['Space'] };            players['p2'].inputs = { l: keys['ArrowLeft'], r: keys['ArrowRight'], j: keys['ArrowUp'], s: keys['Enter'] };
+        } else {
+            const id = myId || 'p1';
+            players[id].inputs = { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] };
+        }
+
+        for (let id in players) {
+            let p = players[id];
+            if (p.hp <= 0) continue;
+            if (p.inputs.l) p.vx -= 1;
+            if (p.inputs.r) p.vx += 1;
+            if (p.inputs.j && p.grounded) { p.vy = -14; p.grounded = false; }
+            p.vx *= SETTINGS.friction; p.vy += SETTINGS.gravity;
+            p.x += p.vx; p.y += p.vy;
+            if (p.y > canvas.height - 100) { p.y = canvas.height - 100; p.vy = 0; p.grounded = true; }
+            if (p.inputs.s && Date.now() - p.lastShot > 300) {
+                bullets.push({ x: p.x + 15, y: p.y + 20, vx: p.vx >= 0 ? 15 : -15 });
+                p.lastShot = Date.now();
+            }
+        }
+
+        if (Math.random() < SETTINGS.spawnRate) zombies.push({ x: (isSplitScreen ? players['p1'].x : players[myId].x) + canvas.width, y: canvas.height - 100 });
+        zombies.forEach((z, zi) => {
+            z.x -= SETTINGS.zombieSpeed;
+            for (let id in players) {
+                let p = players[id];
+                if (Math.abs(p.x - z.x) < 30 && Math.abs(p.y - z.y) < 50) p.hp -= 0.5;            }
+            bullets.forEach((b, bi) => {
+                if (Math.abs(b.x - z.x) < 30 && Math.abs(b.y - z.y) < 50) { zombies.splice(zi, 1); bullets.splice(bi, 1); }
+            });
+        });
+        bullets.forEach((b, i) => { b.x += b.vx; if (Math.abs(b.x - (isSplitScreen ? players['p1'].x : players[myId].x)) > 2000) bullets.splice(i, 1); });
+        
+        if (peer) clientConns.forEach(c => { if (c.open) c.send({ type: 'SYNC', players, zombies, bullets }); });
+    } else if (hostConn && hostConn.open) {
+        hostConn.send({ type: 'INPUT', inputs: { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] }});
+    }
+
+    if (isSplitScreen) {
+        cameraX1 += (players['p1'].x - (canvas.width / 4) - cameraX1) * 0.1;
+        cameraX2 += (players['p2'].x - (canvas.width / 4) - cameraX2) * 0.1;
+    } else {
+        let me = players[myId] || players['p1'];
+        if (me) cameraX1 += (me.x - canvas.width/2 - cameraX1) * 0.1;
+    }}
+
+function drawWorld(camX, width) {
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-camX, canvas.height - 50, 10000, 50);
+    for (let id in players) {
+        let p = players[id]; if (p.hp <= 0) continue;
+        ctx.fillStyle = p.color; ctx.fillRect(p.x - camX, p.y, 30, 50);
+        ctx.fillStyle = 'red'; ctx.fillRect(p.x - camX, p.y - 10, 30, 4);
+        ctx.fillStyle = 'lime'; ctx.fillRect(p.x - camX, p.y - 10, 30 * (p.hp/100), 4);
+    }
+    ctx.fillStyle = '#4ade80'; zombies.forEach(z => ctx.fillRect(z.x - camX, z.y, 30, 50));
+    ctx.fillStyle = '#f1c40f'; bullets.forEach(b => ctx.fillRect(b.x - camX, b.y, 12, 4));
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!gameActive) return;
+
+    if (isSplitScreen) {
+        // Left Side
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, 0, canvas.width/2, canvas.height); ctx.clip();
+        drawWorld(cameraX1, canvas.width/2);
+        ctx.restore();
+
+        // Right Side
+        ctx.save();
+        ctx.translate(canvas.width/2, 0);
+        ctx.beginPath(); ctx.rect(0, 0, canvas.width/2, canvas.height); ctx.clip();
+        drawWorld(cameraX2, canvas.width/2);
+        ctx.restore();
+
+        // Divider
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(canvas.width/2 - 2, 0, 4, canvas.height);
+    } else {
+        drawWorld(cameraX1, canvas.width);
+    }
+
+    const stats = document.getElementById('stats-list');
+    stats.innerHTML = '';
+    for (let id in players) {
+        const card = document.createElement('div'); card.className = 'hp-card';
+        card.style.borderLeftColor = players[id].color;
+        card.innerHTML = `<div style="font-size:10px">${id.toUpperCase()}</div>${Math.ceil(players[id].hp)} HP`;
+        stats.appendChild(card);
+    }
+}
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+loop();
+window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+</script>
+</body>
+</html>
