@@ -1,304 +1,302 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>DEAD ZONE: REDUX </title>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<style>
-:root { --neon: #ff003c; --cyan: #00f2ff; --bg: #050508; --gold: #ffcc00; }
-body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; user-select: none; }
+    <meta charset="UTF-8">
+    <title>DEAD ZONE REDUX - Aiden B.</title>
+    <style>
+        :root { --neon: #ff003c; --cyan: #00f2ff; --zombie: #39ff14; --bg: #020204; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Courier New', Courier, monospace; overflow: hidden; user-select: none; }
+        
+        /* VHS CHROMATIC ABERRATION */
+        .vhs-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none; z-index: 200;
+            opacity: 0.6;
+        }
 
-/* CRT & Scanline Overlay */
-#crt::before { content: " "; position: absolute; inset: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 200; background-size: 100% 3px, 3px 100%; pointer-events: none; }
+        #ui-layer { 
+            position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; 
+            background: radial-gradient(circle, #100000 0%, #000 100%); z-index: 100;
+        }
+        
+        /* VHS SCANLINE ANIMATION */
+        #ui-layer::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            animation: vhs-scan 8s linear infinite;
+            filter: blur(1px);
+        }
+        @keyframes vhs-scan { 0% { top: -10%; } 100% { top: 110%; } }
 
-canvas { display: block; filter: contrast(1.2) saturate(1.4); }
+        .menu-card { 
+            background: rgba(0, 0, 0, 0.9); padding: 50px; border: 1px solid #333; 
+            width: 600px; text-align: center; position: relative;
+            box-shadow: 10px 0 0 rgba(255,0,60,0.2), -10px 0 0 rgba(0,242,255,0.2);
+        }
+        
+        h1 { font-size: 50px; letter-spacing: 10px; margin: 0; color: #fff; text-shadow: 3px 0 var(--neon), -3px 0 var(--cyan); text-transform: uppercase; }
+        .sub { color: var(--cyan); font-size: 14px; letter-spacing: 5px; margin-bottom: 30px; }
 
-/* UI SYSTEM */
-#ui-layer { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, rgba(40,0,5,0.9) 0%, rgba(0,0,0,1) 100%); z-index: 100; }
-.menu-card { background: #0a0a0f; padding: 40px; border: 1px solid var(--neon); text-align: center; width: 480px; box-shadow: 0 0 50px rgba(255, 0, 60, 0.4); }
+        button { 
+            width: 100%; padding: 18px; margin: 8px 0; border: 1px solid #444; 
+            background: transparent; color: #fff; cursor: pointer; font-size: 16px; 
+            letter-spacing: 3px; text-transform: uppercase; transition: 0.2s;
+        }
+        button:hover { background: #fff; color: #000; border-color: #fff; transform: scale(1.02); }
 
-h1 { color: #fff; margin: 0; font-size: 42px; letter-spacing: 10px; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 20px var(--neon); } .sub { color: var(--cyan); font-size: 11px; letter-spacing: 3px; margin-bottom: 30px; opacity: 0.8; }
-
-button { width: 100%; padding: 16px; margin: 8px 0; border: 1px solid #444; background: #000; color: #aaa; cursor: pointer; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; transition: 0.2s; }
-button:hover { border-color: var(--neon); color: #fff; background: rgba(255, 0, 60, 0.1); transform: scale(1.02); }
-
-.hidden { display: none !important; }
-#hud { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
-.hp-card { background: rgba(0,0,0,0.8); padding: 12px; border-left: 4px solid var(--neon); margin-bottom: 8px; font-size: 14px; font-weight: bold; }
-#obj-ui { position: absolute; top: 20px; right: 20px; text-align: right; color: var(--cyan); font-size: 16px; font-weight: 900; text-shadow: 0 0 10px #000; }
-
-#win-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 150; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 4px solid var(--cyan); margin: 20px; }
-#win-screen h2 { font-size: 60px; color: var(--cyan); margin: 0; letter-spacing: 10px; }
-</style>
+        #obj-ui { position: absolute; top: 30px; right: 30px; text-align: right; z-index: 10; pointer-events: none; }
+        #obj-title { font-size: 32px; color: var(--neon); font-weight: 900; text-shadow: 0 0 10px var(--neon); }
+        
+        #hud { position: absolute; top: 30px; left: 30px; z-index: 10; }
+        .hp-bar-bg { width: 300px; height: 10px; background: #111; margin-top: 5px; border: 1px solid #333; }
+        .hp-bar-fill { height: 100%; background: var(--neon); box-shadow: 0 0 15px var(--neon); transition: width 0.1s; }
+        
+        canvas { display: block; filter: contrast(1.2) brightness(1.1); }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
-<div id="crt"></div>
-<div id="hud" class="hidden"><div id="stats-list"></div></div>
-<div id="obj-ui" class="hidden"></div>
+    <div class="vhs-overlay"></div>
+    <div id="hud" class="hidden">
+        <div style="font-size: 10px; letter-spacing: 2px; color: #fff;">OPERATIVE VITALS</div>
+        <div class="hp-bar-bg"><div id="hp-fill" class="hp-bar-fill"></div></div>
+    </div>
+    
+    <div id="obj-ui" class="hidden">
+        <div id="obj-title">MISSION</div>
+        <div id="obj-desc">REACH GOAL</div>
+    </div>
 
-<div id="win-screen" class="hidden">
-<h2 id="t-win-title">MISSION COMPLETE</h2>
-<p id="t-win-desc" style="letter-spacing: 5px;">SECTOR PURIFIED</p>
-<button id="t-next-btn" onclick="game.nextMission()" style="width:350px; border-color:var(--cyan); color:var(--cyan)">PROCEED TO NEXT SECTOR</button>
-<button id="t-menu-btn" onclick="location.reload()" style="width:350px; background:#222">ABORT MISSION</button>
-</div>
+    <div id="ui-layer">
+        <div id="m-lang" class="menu-card">
+            <h1>BOOT SEQUENCE</h1>
+            <div class="sub">SELECT INTERFACE LANGUAGE</div>
+            <button onclick="ui.setLang('EN')">English</button>
+            <button onclick="ui.setLang('ES')">Español</button>
+            <button onclick="ui.setLang('JA')">日本語</button>
+            <div style="margin-top: 20px; font-size: 10px; color: #444;">V.2.0.26 REDUX SOURCE</div>
+        </div>
 
-<div id="ui-layer">
-<!-- 1. Language Selection -->
-<div id="m-lang" class="menu-card">
-<h1>SELECT LANGUAGE</h1>
-<button onclick="ui.setLang('en')">English</button>
-<button onclick="ui.setLang('es')">Español</button>
-<button onclick="ui.setLang('de')">Deutsch</button>
-<button onclick="ui.setLang('ja')">日本語</button>
-<button onclick="ui.setLang('zh')">中文</button>
-</div>
+        <div id="m-main" class="menu-card hidden">
+            <h1>DEAD ZONE</h1>
+            <div class="sub">REDUX // BY AIDEN B.</div>
+            <button onclick="ui.nav('m-campaign')">Campaign Mode</button>
+            <button onclick="ui.setMode('endless')">Endless Survival</button>
+            <button onclick="ui.setMission(1)">Tutorial</button>
+            <div style="font-size: 9px; margin-top: 20px; color: #666;">CREATED BY AIDEN B.</div>
+        </div>
 
-<!-- 2. Main Menu -->
-<div id="m-main" class="menu-card hidden"> <h1 id="t-game-title">DEAD ZONE REDUX</h1>
-<div class="sub">A Zombie Game By Aiden B.</div>
-<button id="t-campaign" onclick="ui.nav('m-campaign')">CAMPAIGN</button>
-<button id="t-tutorial" onclick="ui.setMission(0)" style="border-color:var(--cyan); color:var(--cyan)">TUTORIAL</button>
-<button id="t-online" onclick="ui.nav('m-online')">ONLINE COLONY</button>
-<button id="t-split" onclick="ui.setMode('split')">SPLIT SCREEN</button>
-</div>
+        <div id="m-campaign" class="menu-card hidden"></div>
 
-<!-- 3. Campaign Menu -->
-<div id="m-campaign" class="menu-card hidden">
-<h1 id="t-camp-title">CAMPAIGN</h1>
-<button onclick="ui.setMission(1)">M1: THE GATES</button>
-<button onclick="ui.setMission(2)">M2: THE SWARM</button>
-<button onclick="ui.setMission(3)">M3: HEAVY METAL</button>
-<button id="t-back" onclick="ui.nav('m-main')">BACK</button>
-</div> <!-- 4. Online -->
-<div id="m-online" class="menu-card hidden">
-<h1 id="t-net-title">NETWORK</h1>
-<input type="text" id="room-input" placeholder="ROOM CODE">
-<button id="t-host" onclick="ui.setMode('host')">Host Private</button>
-<button id="t-join" onclick="ui.setMode('join')">Join Private</button>
-<button onclick="ui.nav('m-main')">Back</button>
-</div>
+        <div id="m-class" class="menu-card hidden">
+            <h1>CHOOSE CLASS</h1>
+            <button onclick="game.launch('assault')">Assault (Rifle)</button>
+            <button onclick="game.launch('tank')">Tank (Shotgun)</button>
+            <button onclick="ui.nav('m-main')" style="border:none; color: #555;">Back</button>
+        </div>
+    </div>
 
-<!-- 5. Class Selection -->
-<div id="m-class" class="menu-card hidden">
-<h1 id="t-role-title">SELECT ROLE</h1>
-<button onclick="game.launch('assault')">Assault (Rifle)</button>
-<button onclick="game.launch('tank')">Tank (Shotgun)</button>
-<button onclick="game.launch('medic')">Medic (Pulse)</button>
-</div>
-</div>
-
-<canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
 
 <script>
-/** --- TRANSLATIONS --- **/
-const TRANSLATIONS = {
-en: { gameTitle: "DEAD ZONE", campaign: "Campaign", tutorial: "Tutorial", online: "Online Colony", split: "Split Screen", campTitle: "Campaign", netTitle: "Network", host: "Host Private", join: "Join Private", roleTitle: "Select Role", back: "Back", winTitle: "COMPLETE", winDesc: "Sector Secured.", nextBtn: "Next Mission", menuBtn: "Main Menu" },
-es: { gameTitle: "ZONA MUERTA", campaign: "Campaña", tutorial: "Tutorial", online: "En Línea", split: "Dividida", campTitle: "Campaña", netTitle: "Red", host: "Crear Sala", join: "Unirse", roleTitle: "Clase", back: "Volver", winTitle: "COMPLETO", winDesc: "Sector Seguro.", nextBtn: "Siguiente", menuBtn: "Menú" },
-de: { gameTitle: "TOTENZONE", campaign: "Kampagne", tutorial: "Tutorial", online: "Netzwerk", split: "Split", campTitle: "Kampagne", netTitle: "Netzwerk", host: "Hosten", join: "Beitreten", roleTitle: "Klasse", back: "Zurück", winTitle: "ERLEDIGT", winDesc: "Sektor sicher.", nextBtn: "Weiter", menuBtn: "Menü" },
-ja: { gameTitle: "デッドゾーン", campaign: "キャンペーン", tutorial: "チュートリアル", online: "オンライン", split: "画面分割", campTitle: "キャンペーン", netTitle: "ネットワーク", host: "ホスト", join: "参加", roleTitle: "クラス", back: "戻る", winTitle: "完了", winDesc: "エリア確保。", nextBtn: "次へ", menuBtn: "戻る" },
-zh: { gameTitle: "死亡地带", campaign: "战役", tutorial: "新手", online: "在线", split: "分屏", campTitle: "战役", netTitle: "网络", host: "创建", join: "加入", roleTitle: "选择", back: "返回", winTitle: "完成", winDesc: "区域清除。", nextBtn: "下一关", menuBtn: "主菜单" }
-};
+    const Audio = {
+        ctx: null,
+        init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+        play(f, type, dur, vol, sweep=0) {
+            if(!this.ctx) return;
+            const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+            if(sweep) o.frequency.exponentialRampToValueAtTime(sweep, this.ctx.currentTime + dur);
+            g.gain.setValueAtTime(vol, this.ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(); o.stop(this.ctx.currentTime + dur);
+        },
+        sfx(t) {
+            if(t==='shoot') this.play(500, 'square', 0.1, 0.4, 60);
+            if(t==='hit') this.play(100, 'sawtooth', 0.2, 0.5, 10);
+            if(t==='jump') this.play(300, 'sine', 0.1, 0.2, 500);
+            if(t==='win') this.play(440, 'triangle', 0.5, 0.3, 880);
+        }
+    };
 
-/** --- UI CONTROLLER --- **/
-const ui = {
-lang: 'en', mission: 0, mode: '',
-setLang(l) {
-this.lang = l; const t = TRANSLATIONS[l]; document.getElementById('t-game-title').innerText = t.gameTitle;
-document.getElementById('t-campaign').innerText = t.campaign;
-document.getElementById('t-tutorial').innerText = t.tutorial;
-document.getElementById('t-online').innerText = t.online;
-document.getElementById('t-split').innerText = t.split;
-document.getElementById('t-camp-title').innerText = t.campTitle;
-document.getElementById('t-net-title').innerText = t.netTitle;
-document.getElementById('t-host').innerText = t.host;
-document.getElementById('t-join').innerText = t.join;
-document.getElementById('t-role-title').innerText = t.roleTitle;
-document.getElementById('t-back').innerText = t.back;
-document.getElementById('t-win-title').innerText = t.winTitle;
-document.getElementById('t-win-desc').innerText = t.winDesc;
-document.getElementById('t-next-btn').innerText = t.nextBtn;
-document.getElementById('t-menu-btn').innerText = t.menuBtn;
-this.nav('m-main');
-},
-nav(id) {
-document.querySelectorAll('.menu-card').forEach(c => c.classList.add('hidden'));
-document.getElementById(id).classList.remove('hidden');
-Audio.init();
-},
-setMission(idx) { this.mission = idx; this.mode = 'single'; this.nav('m-class'); },
-setMode(m) { this.mode = m; this.nav('m-class'); }
-};
+    const ui = {
+        mission: 1, mode: 'campaign',
+        setLang() { Audio.init(); this.nav('m-main'); },
+        nav(id) {
+            if(id === 'm-campaign') game.renderCampaign();
+            document.querySelectorAll('.menu-card').forEach(c => c.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById('ui-layer').classList.remove('hidden');
+        },
+        setMode(m) { this.mode = m; this.nav('m-class'); },
+        setMission(i) { this.mission = i; this.mode = 'campaign'; this.nav('m-class'); }
+    };
 
-/** --- AUDIO ENGINE --- **/
-const Audio = {
-ctx: null, master: null, beat: 0, nextTime: 0,
-init() { if (this.ctx) return; this.ctx = new AudioContext(); this.master = this.ctx.createGain(); this.master.gain.value = 0.15; this.master.connect(this.ctx.destination); this.nextTime = this.ctx.currentTime; this.tick(); }, play(f, t, d, v, slide = 0) { const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime); if(slide) o.frequency.exponentialRampToValueAtTime(slide, this.ctx.currentTime + d); g.gain.setValueAtTime(v, this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d); o.connect(g); g.connect(this.master); o.start(); o.stop(this.ctx.currentTime + d); },
-tick() { while (this.nextTime < this.ctx.currentTime + 0.1) { this.step(this.beat, this.nextTime); this.nextTime += 0.14; this.beat++; } setTimeout(() => this.tick(), 25); },
-step(b, t) {
-if (!game.active) return;
-const s = b % 16; const m = Math.floor(b / 16) % 8;
-if (s === 0 || s === 8) this.play(55, 'sine', 0.2, 0.8, 1);
-if (s === 4 || s === 12) this.play(150, 'triangle', 0.1, 0.3);
-if (s % 4 === 0) this.play([40, 30, 45, 35, 40, 30, 55, 45][m], 'sawtooth', 0.4, 0.1);
-if (m > 3 && s % 4 === 2) this.play([220, 261, 293, 329][Math.random()*4|0], 'square', 0.2, 0.04);
-},
-sfx(type) { if(!this.ctx) return; if(type==='shoot') this.play(800, 'square', 0.08, 0.1, 100); if(type==='hit') this.play(60, 'sawtooth', 0.2, 0.3); }
-};
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-/** --- GAME ENGINE --- **/
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const game = {
+        active: false, raf: null, progress: parseInt(localStorage.getItem('dz_redux_v7')) || 1,
+        player: null, zombies: [], bullets: [], shells: [], platforms: [],
+        shake: 0, kills: 0, frame: 0, dmgRed: 0,
 
-const game = {
-active: false, isSplit: false, cameraX1: 0, cameraX2: 0, shake: 0,
-players: {}, zombies: [], bullets: [], platforms: [], bgs: [], particles: [], kills: 0,
-missions: [
-{ targetDist: 1000, targetKills: 0, spawn: 0, types: [], tutorial: true },
-{ targetDist: 1500, targetKills: 0, spawn: 0.015, types: [0] },
-{ targetDist: 0, targetKills: 30, spawn: 0.025, types: [1] },
-{ targetDist: 0, targetKills: 8, spawn: 0.015, types: [2] }
-],
-zTypes: [{ hp: 2, spd: 1.5, color: '#00ff66' }, { hp: 1, spd: 3.2, color: '#ffcc00' }, { hp: 15, spd: 0.8, color: '#9900ff' }],
+        renderCampaign() {
+            const menu = document.getElementById('m-campaign');
+            menu.innerHTML = '<h1>SECTORS</h1><div class="sub">SELECT YOUR ENTRY POINT</div>';
+            const grid = document.createElement('div');
+            grid.style.display = 'grid'; grid.style.gridTemplateColumns = 'repeat(5, 1fr)'; grid.style.gap = '10px';
+            for(let i=1; i<=20; i++) {
+                const b = document.createElement('button');
+                const isLocked = i > this.progress;
+                b.innerText = isLocked ? '???' : i;
+                b.disabled = isLocked;
+                b.onclick = () => ui.setMission(i);
+                grid.appendChild(b);
+            }
+            menu.appendChild(grid);
+            const back = document.createElement('button'); back.innerText = "BACK"; back.onclick = () => ui.nav('m-main');
+            menu.appendChild(back);
+        },
 
-launch(cls) {
-this.generateLevel();
-this.players = { 'p1': this.createPlayer('p1', 0, cls) };
-if (ui.mode === 'split') { this.isSplit = true; this.players['p2'] = this.createPlayer('p2', 1, 'tank'); }
-this.active = true; this.shake = 0; this.kills = 0; this.zombies = []; this.bullets = []; this.particles = [];
-document.getElementById('ui-layer').classList.add('hidden');
-document.getElementById('hud').classList.remove('hidden');
-document.getElementById('obj-ui').classList.remove('hidden');
-requestAnimationFrame(() => this.loop());
-},
+        launch(cls) {
+            this.stop(); // Clear any existing loop
+            this.active = true; this.kills = 0; this.zombies = []; this.bullets = []; this.shells = [];
+            this.generateLevel();
+            const s = cls === 'assault' ? {hp:100, f:130, d:1.5} : {hp:250, f:450, d:6};
+            this.player = { x: 200, y: 0, vx: 0, vy: 0, hp: s.hp, mHp: s.hp, fire: s.f, dmg: s.d, dir: 1, grounded: false };
+            
+            document.getElementById('ui-layer').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('obj-ui').classList.remove('hidden');
+            this.loop();
+        },
 
-generateLevel() {
-this.platforms = []; this.bgs = [];
-for(let i=0; i<100; i++) {
-this.platforms.push({ x: i*600, y: canvas.height-120, w: 650, h: 200 });
-this.bgs.push({ x: i*400, w: 200+Math.random()*200, h: 300+Math.random()*400, s: 0.2+Math.random()*0.3 });
-}
-},
+        stop() {
+            this.active = false;
+            if(this.raf) cancelAnimationFrame(this.raf);
+        },
 
-createPlayer(id, idx, cls) {
-const s = { assault: { hp: 100, f: 150, dmg: 1 }, tank: { hp: 250, f: 500, dmg: 3 }, medic: { hp: 130, f: 300, dmg: 1.5 } }[cls];
-return { id, x: 100, y: 0, vx: 0, vy: 0, color: idx===0?'#00f2ff':'#ff003c', hp: s.hp, maxHp: s.hp, cls, fire: s.f, dmg: s.dmg, inputs: {}, grounded: false };
-},
+        generateLevel() {
+            this.platforms = [];
+            for(let i=0; i<400; i++) this.platforms.push({ x: i*800, y: canvas.height-140, w: 750, h: 400 });
+        },
 
-spawnParticle(x, y, color, count=5) {
-for(let i=0; i<count; i++) this.particles.push({ x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, color });
-},
+        update() {
+            if(!this.active) return;
+            this.frame++;
+            if(this.dmgRed > 0) this.dmgRed -= 0.05;
+            const p = this.player;
+            this.shake *= 0.9;
 
-update() {
-if (!this.active) return;
-const mis = this.missions[ui.mission];
-if(this.shake > 0) this.shake *= 0.9;
+            if(keys.KeyA) { p.vx -= 1.8; p.dir = -1; }
+            if(keys.KeyD) { p.vx += 1.8; p.dir = 1; }
+            if(keys.KeyW && p.grounded) { p.vy = -19; p.grounded = false; Audio.sfx('jump'); }
+            
+            p.vx *= 0.85; p.vy += 0.9; p.x += p.vx; p.y += p.vy;
+            p.grounded = false;
+            this.platforms.forEach(pl => {
+                if(p.x+20 > pl.x && p.x-20 < pl.x+pl.w && p.y+70 > pl.y && p.y+70 < pl.y+40 && p.vy >= 0) {
+                    p.y = pl.y-70; p.vy = 0; p.grounded = true;
+                }
+            });
 
-for (let id in this.players) {
-let p = this.players[id];
-p.inputs = id === 'p1' ? { l: keys['KeyA'], r: keys['KeyD'], j: keys['KeyW'], s: keys['Space'] } : { l: keys['ArrowLeft'], r: keys['ArrowRight'], j: keys['ArrowUp'], s: keys['Enter'] }; if (p.inputs.l) p.vx -= 1.3; if (p.inputs.r) p.vx += 1.3;
-if (p.inputs.j && p.grounded) { p.vy = -18; p.grounded = false; }
-p.vx *= 0.85; p.vy += 0.7; p.x += p.vx; p.y += p.vy; p.grounded = false;
-this.platforms.forEach(pl => { if(p.x+20 > pl.x && p.x < pl.x+pl.w && p.y+50 > pl.y && p.y+50 < pl.y+30 && p.vy >= 0) { p.y = pl.y-50; p.vy = 0; p.grounded = true; } });
+            if(keys.Space && Date.now() - (p.lastShot||0) > p.fire) {
+                this.bullets.push({ x: p.x + (p.dir*40), y: p.y+20, vx: p.dir*40, vy: (Math.random()-0.5)*4 });
+                this.shells.push({ x: p.x, y: p.y+20, vx: -p.dir*5, vy: -6, r: 0 });
+                p.lastShot = Date.now(); Audio.sfx('shoot'); this.shake = 10;
+            }
 
-if (p.inputs.s && Date.now() - (p.lastShot || 0) > p.fire) {
-const count = p.cls === 'tank' ? 5 : 1;
-for(let i=0; i<count; i++) this.bullets.push({ x: p.x + 15, y: p.y + 20, vx: (p.vx >= 0 ? 20 : -20), vy: (Math.random()-0.5)*count, dmg: p.dmg });
-p.lastShot = Date.now(); Audio.sfx('shoot'); this.shake = 5;
-}
-if(p.hp <= 0 || p.y > canvas.height) { p.hp = p.maxHp; p.x -= 200; p.y = 0; this.shake = 15; }
-}
+            // Zombie Logic
+            if(Math.random() < 0.03 + (this.kills * 0.0001)) {
+                this.zombies.push({ x: p.x + 1400, y: -200, vy: 0, hp: 5 + (ui.mission), spd: 3 + Math.random()*3 });
+            }
 
-if (Math.random() < mis.spawn) {
-const t = this.zTypes[mis.types[Math.random()*mis.types.length|0]];
-this.zombies.push({ ...t, x: this.cameraX1 + canvas.width + 100, y: canvas.height - 150, vy: 0, w: 35, h: 55 });
-}
+            this.zombies.forEach((z, zi) => {
+                z.x += (p.x > z.x ? 1 : -1) * z.spd;
+                z.vy += 0.8; z.y += z.vy;
+                this.platforms.forEach(pl => { if(z.x+20 > pl.x && z.x-20 < pl.x+pl.w && z.y+90 > pl.y && z.y+90 < pl.y+40 && z.vy >= 0) { z.y = pl.y-90; z.vy = 0; } });
+                if(Math.abs(p.x - z.x) < 50 && Math.abs(p.y - z.y) < 70) { p.hp -= 0.6; this.dmgRed = 0.3; }
+            });
 
-this.zombies.forEach((z, zi) => {
-let target = this.players['p1'];
-z.x += (target.x > z.x ? 1 : -1) * z.spd; z.vy += 0.7; z.y += z.vy;
-this.platforms.forEach(pl => { if(z.x+20 > pl.x && z.x < pl.x+pl.w && z.y+z.h > pl.y && z.y+z.h < pl.y+30) { z.y = pl.y-z.h; z.vy = 0; } });
-if (Math.abs(target.x-z.x)<35 && Math.abs(target.y-z.y)<55) { target.hp -= 1; this.shake = 3; }
-});
+            this.bullets.forEach((b, bi) => {
+                b.x += b.vx;
+                this.zombies.forEach((z, zi) => {
+                    if(Math.abs(b.x - z.x) < 45 && Math.abs(b.y - z.y) < 90) {
+                        z.hp -= p.dmg; this.bullets.splice(bi, 1);
+                        if(z.hp <= 0) { this.zombies.splice(zi, 1); this.kills++; Audio.sfx('hit'); }
+                    }
+                });
+            });
 
-this.bullets.forEach((b, bi) => {
-b.x += b.vx; b.y += (b.vy || 0);
-this.zombies.forEach((z, zi) => {
-if (Math.abs(b.x-z.x)<30 && Math.abs(b.y-z.y)<50) {
-z.hp -= b.dmg; this.bullets.splice(bi, 1);
-this.spawnParticle(z.x, z.y, '#ff003c');
-if(z.hp <= 0) { this.zombies.splice(zi, 1); this.kills++; Audio.sfx('hit'); }
-}
-});
-});
+            this.shells.forEach((sh, si) => { sh.x += sh.vx; sh.y += sh.vy; sh.vy += 0.8; sh.r += 0.2; if(sh.y > canvas.height) this.shells.splice(si,1); });
 
-this.particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; if(p.life <= 0) this.particles.splice(i, 1); });
+            // WIN CONDITION - FIXED FREEZE
+            const goal = 1000 + (ui.mission * 1000);
+            if(ui.mode === 'campaign' && p.x > goal) {
+                Audio.sfx('win');
+                if(ui.mission === this.progress) { this.progress++; localStorage.setItem('dz_redux_v7', this.progress); }
+                this.stop();
+                ui.nav('m-campaign');
+                return; // Break out of update
+            }
 
-if ((mis.targetDist && this.players['p1'].x > mis.targetDist) || (mis.targetKills && this.kills >= mis.targetKills)) {
-this.active = false; document.getElementById('win-screen').classList.remove('hidden');
-}
+            if(p.hp <= 0 || p.y > canvas.height + 200) { this.stop(); location.reload(); }
+            
+            document.getElementById('obj-title').innerText = ui.mode === 'endless' ? "SURVIVAL" : `SECTOR ${ui.mission}`;
+            document.getElementById('obj-desc').innerText = ui.mode === 'endless' ? `KILLS: ${this.kills}` : `GOAL: ${goal}m (DIST: ${Math.floor(p.x)}m)`;
+        },
 
-this.cameraX1 += (this.players['p1'].x - (this.isSplit ? canvas.width/4 : canvas.width/2) - this.cameraX1) * 0.1;
-if(this.isSplit) this.cameraX2 += (this.players['p2'].x - canvas.width/4 - this.cameraX2) * 0.1;
-},
+        draw() {
+            ctx.fillStyle = '#010102'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if(this.dmgRed > 0) { ctx.fillStyle = `rgba(255,0,0,${this.dmgRed})`; ctx.fillRect(0,0,canvas.width,canvas.height); }
+            const camX = this.player.x - canvas.width/3;
+            
+            ctx.save();
+            ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
 
-nextMission() { ui.mission++; document.getElementById('win-screen').classList.add('hidden'); this.launch(this.players['p1'].cls); },
+            this.platforms.forEach(p => {
+                ctx.fillStyle = '#08080a'; ctx.fillRect(p.x - camX, p.y, p.w, p.h);
+                ctx.fillStyle = '#ff003c'; ctx.fillRect(p.x - camX, p.y, p.w, 4);
+            });
 
-drawView(camX) {
-const sx = (Math.random()-0.5)*this.shake;
-const sy = (Math.random()-0.5)*this.shake;
-ctx.save(); ctx.translate(sx, sy);
+            // Player silhouette
+            ctx.fillStyle = '#fff'; ctx.fillRect(this.player.x - camX - 15, this.player.y, 30, 70);
+            
+            // Zombies - Glow
+            this.zombies.forEach(z => {
+                ctx.shadowBlur = 15; ctx.shadowColor = '#39ff14';
+                ctx.fillStyle = '#000'; ctx.strokeStyle = '#39ff14'; ctx.lineWidth = 2;
+                ctx.fillRect(z.x - camX - 25, z.y, 50, 90);
+                ctx.strokeRect(z.x - camX - 25, z.y, 50, 90);
+                ctx.fillStyle = '#39ff14'; ctx.fillRect(z.x - camX - 10, z.y+15, 6, 6); ctx.fillRect(z.x - camX + 4, z.y+15, 6, 6);
+                ctx.shadowBlur = 0;
+            });
 
-this.bgs.forEach(b => { ctx.fillStyle = '#0a0a0f'; ctx.fillRect(b.x - camX * b.s, canvas.height - b.h, b.w, b.h); });
-this.platforms.forEach(p => {
-ctx.fillStyle = '#111'; ctx.fillRect(p.x - camX, p.y, p.w, p.h);
-ctx.fillStyle = '#ff003c'; ctx.fillRect(p.x - camX, p.y, p.w, 4);
-});
+            ctx.fillStyle = '#fff'; this.bullets.forEach(b => ctx.fillRect(b.x - camX, b.y, 25, 4));
+            ctx.fillStyle = '#ffcc00'; this.shells.forEach(sh => {
+                ctx.save(); ctx.translate(sh.x - camX, sh.y); ctx.rotate(sh.r); ctx.fillRect(-2,-4,4,8); ctx.restore();
+            });
 
-if(this.missions[ui.mission].tutorial) {
-ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
-ctx.fillText(">> WASD TO MOVE", 100-camX, canvas.height-250);
-ctx.fillText(">> SPACE TO SHOOT", 800-camX, canvas.height-250);
-}
+            ctx.restore();
+            document.getElementById('hp-fill').style.width = (this.player.hp / this.player.mHp * 100) + '%';
+        },
 
-this.zombies.forEach(z => { ctx.fillStyle = z.color; ctx.fillRect(z.x-camX, z.y, z.w, z.h); ctx.fillStyle='#f00'; ctx.fillRect(z.x-camX+5, z.y+10, 5, 5); });
-this.bullets.forEach(b => { ctx.fillStyle = '#00f2ff'; ctx.fillRect(b.x-camX, b.y, 12, 4); ctx.shadowBlur=10; ctx.shadowColor='#00f2ff'; });
-ctx.shadowBlur = 0;
-this.particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(p.x-camX, p.y, 4, 4); }); ctx.globalAlpha = 1;
+        loop() { 
+            if(!this.active) return;
+            this.update(); 
+            this.draw(); 
+            this.raf = requestAnimationFrame(() => this.loop()); 
+        }
+    };
 
-for(let id in this.players) {
-let p = this.players[id]; ctx.fillStyle = p.color; ctx.fillRect(p.x-camX, p.y, 30, 50);
-ctx.fillStyle = '#fff'; ctx.fillRect(p.x-camX+(p.vx>=0?20:4), p.y+10, 6, 6);
-}
-ctx.restore();
-},
-
-draw() {
-ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-if (!this.active) return;
-if (this.isSplit) {
-ctx.save(); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip(); this.drawView(this.cameraX1); ctx.restore();
-ctx.save(); ctx.translate(canvas.width/2, 0); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip(); this.drawView(this.cameraX2); ctx.restore();
-ctx.fillStyle='#ff003c'; ctx.fillRect(canvas.width/2-1, 0, 2, canvas.height);
-} else this.drawView(this.cameraX1);
-
-const stats = document.getElementById('stats-list'); stats.innerHTML = '';
-for (let id in this.players) {
-const p = this.players[id]; const card = document.createElement('div'); card.className = 'hp-card'; card.style.borderColor = p.color;
-card.innerHTML = `<span style="color:${p.color}">${p.cls.toUpperCase()}</span>: ${Math.ceil(p.hp)} HP`;
-stats.appendChild(card);
-}
-const mis = this.missions[ui.mission];
-document.getElementById('obj-ui').innerText = mis.targetDist ? `PROGRESS: ${Math.floor((this.players['p1'].x/mis.targetDist)*100)}%` : `KILLS: ${this.kills}/${mis.targetKills}`;
-},
-
-loop() { this.update(); this.draw(); if(this.active) requestAnimationFrame(() => this.loop()); }
-};
-
-const keys = {};
-window.onkeydown = e => { keys[e.code] = true; if(e.code === 'Escape') location.reload(); };
-window.onkeyup = e => keys[e.code] = false;
+    const keys = {};
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
 </script>
 </body>
 </html>
