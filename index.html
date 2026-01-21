@@ -2,301 +2,260 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DEAD ZONE REDUX - Aiden B.</title>
+    <title>DEAD ZONE REDUX - Audio Update</title>
     <style>
-        :root { --neon: #ff003c; --cyan: #00f2ff; --zombie: #39ff14; --bg: #020204; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Courier New', Courier, monospace; overflow: hidden; user-select: none; }
+        :root { --neon: #ff003c; --cyan: #00f2ff; --zombie: #39ff14; --bg: #020205; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
         
-        /* VHS CHROMATIC ABERRATION */
         .vhs-overlay {
-            position: absolute; inset: 0;
+            position: fixed; inset: 0; pointer-events: none; z-index: 500;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none; z-index: 200;
-            opacity: 0.6;
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%; opacity: 0.5;
         }
 
-        #ui-layer { 
-            position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; 
-            background: radial-gradient(circle, #100000 0%, #000 100%); z-index: 100;
-        }
+        #ui-layer { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 100; background: rgba(0,0,0,0.85); }
+        .menu-card { background: #050508; padding: 40px; border: 1px solid #222; width: 500px; text-align: center; border-top: 3px solid var(--neon); }
         
-        /* VHS SCANLINE ANIMATION */
-        #ui-layer::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            animation: vhs-scan 8s linear infinite;
-            filter: blur(1px);
-        }
-        @keyframes vhs-scan { 0% { top: -10%; } 100% { top: 110%; } }
-
-        .menu-card { 
-            background: rgba(0, 0, 0, 0.9); padding: 50px; border: 1px solid #333; 
-            width: 600px; text-align: center; position: relative;
-            box-shadow: 10px 0 0 rgba(255,0,60,0.2), -10px 0 0 rgba(0,242,255,0.2);
-        }
-        
-        h1 { font-size: 50px; letter-spacing: 10px; margin: 0; color: #fff; text-shadow: 3px 0 var(--neon), -3px 0 var(--cyan); text-transform: uppercase; }
-        .sub { color: var(--cyan); font-size: 14px; letter-spacing: 5px; margin-bottom: 30px; }
+        h1 { font-size: 38px; letter-spacing: 10px; margin: 0; text-shadow: 0 0 15px var(--neon); }
+        .sub { color: var(--cyan); font-size: 10px; letter-spacing: 4px; margin-bottom: 30px; }
 
         button { 
-            width: 100%; padding: 18px; margin: 8px 0; border: 1px solid #444; 
-            background: transparent; color: #fff; cursor: pointer; font-size: 16px; 
-            letter-spacing: 3px; text-transform: uppercase; transition: 0.2s;
+            width: 100%; padding: 15px; margin: 8px 0; border: 1px solid #333; 
+            background: #000; color: #fff; cursor: pointer; font-size: 12px; 
+            letter-spacing: 2px; text-transform: uppercase; transition: 0.2s;
         }
-        button:hover { background: #fff; color: #000; border-color: #fff; transform: scale(1.02); }
+        button:hover:not(:disabled) { background: #fff; color: #000; box-shadow: 0 0 15px #fff; }
 
-        #obj-ui { position: absolute; top: 30px; right: 30px; text-align: right; z-index: 10; pointer-events: none; }
-        #obj-title { font-size: 32px; color: var(--neon); font-weight: 900; text-shadow: 0 0 10px var(--neon); }
-        
-        #hud { position: absolute; top: 30px; left: 30px; z-index: 10; }
-        .hp-bar-bg { width: 300px; height: 10px; background: #111; margin-top: 5px; border: 1px solid #333; }
-        .hp-bar-fill { height: 100%; background: var(--neon); box-shadow: 0 0 15px var(--neon); transition: width 0.1s; }
-        
-        canvas { display: block; filter: contrast(1.2) brightness(1.1); }
+        #hud { position: absolute; top: 30px; left: 30px; z-index: 50; }
+        .hp-bar { width: 200px; height: 4px; background: #111; border: 1px solid #333; margin-top: 5px;}
+        .hp-fill { height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: 0.2s; }
+
+        #credits-scroll { height: 120px; overflow: hidden; position: relative; border: 1px solid #111; background: #000; padding: 10px; }
+        .scroll-wrap { position: absolute; width: 100%; animation: scrollUp 15s linear infinite; }
+        @keyframes scrollUp { 0% { top: 100%; } 100% { top: -150%; } }
+
+        canvas { display: block; filter: contrast(1.1) brightness(1.1); }
         .hidden { display: none !important; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin: 15px 0; }
     </style>
 </head>
-<body>
+<body onclick="Snd.init()">
     <div class="vhs-overlay"></div>
-    <div id="hud" class="hidden">
-        <div style="font-size: 10px; letter-spacing: 2px; color: #fff;">OPERATIVE VITALS</div>
-        <div class="hp-bar-bg"><div id="hp-fill" class="hp-bar-fill"></div></div>
-    </div>
     
-    <div id="obj-ui" class="hidden">
-        <div id="obj-title">MISSION</div>
-        <div id="obj-desc">REACH GOAL</div>
+    <div id="hud" class="hidden">
+        <div style="font-size: 9px; letter-spacing: 2px;">VITAL SIGNS</div>
+        <div class="hp-bar"><div id="hp-fill" class="hp-fill"></div></div>
     </div>
 
     <div id="ui-layer">
         <div id="m-lang" class="menu-card">
-            <h1>BOOT SEQUENCE</h1>
-            <div class="sub">SELECT INTERFACE LANGUAGE</div>
-            <button onclick="ui.setLang('EN')">English</button>
-            <button onclick="ui.setLang('ES')">Español</button>
-            <button onclick="ui.setLang('JA')">日本語</button>
-            <div style="margin-top: 20px; font-size: 10px; color: #444;">V.2.0.26 REDUX SOURCE</div>
+            <h1>BOOT</h1>
+            <div class="sub">SELECT LANGUAGE</div>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.setLang('EN')">English</button>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.setLang('ES')">Español</button>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.setLang('JA')">日本語</button>
         </div>
 
         <div id="m-main" class="menu-card hidden">
-            <h1>DEAD ZONE</h1>
-            <div class="sub">REDUX // BY AIDEN B.</div>
-            <button onclick="ui.nav('m-campaign')">Campaign Mode</button>
-            <button onclick="ui.setMode('endless')">Endless Survival</button>
-            <button onclick="ui.setMission(1)">Tutorial</button>
-            <div style="font-size: 9px; margin-top: 20px; color: #666;">CREATED BY AIDEN B.</div>
+            <h1 data-t="title">DEAD ZONE</h1>
+            <div class="sub">AUDIO ENHANCED // AIDEN B.</div>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.nav('m-campaign')" data-t="btn_campaign">Deploy</button>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.setMode('endless')" data-t="btn_endless">Survival</button>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.nav('m-credits')" data-t="btn_credits">Credits</button>
         </div>
 
-        <div id="m-campaign" class="menu-card hidden"></div>
+        <div id="m-campaign" class="menu-card hidden">
+            <h1 data-t="sectors">SECTORS</h1>
+            <div id="campaign-grid" class="grid"></div>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.nav('m-main')" data-t="back">Return</button>
+        </div>
 
         <div id="m-class" class="menu-card hidden">
-            <h1>CHOOSE CLASS</h1>
-            <button onclick="game.launch('assault')">Assault (Rifle)</button>
-            <button onclick="game.launch('tank')">Tank (Shotgun)</button>
-            <button onclick="ui.nav('m-main')" style="border:none; color: #555;">Back</button>
+            <h1 data-t="choose_class">LOADOUT</h1>
+            <button onmouseover="Snd.ui('hover')" onclick="game.launch('assault')" data-t="cls_1">Assault Rifle</button>
+            <button onmouseover="Snd.ui('hover')" onclick="game.launch('tank')" data-t="cls_2">Shield Tank</button>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.nav('m-main')" data-t="back">Cancel</button>
+        </div>
+
+        <div id="m-credits" class="menu-card hidden">
+            <h1 data-t="btn_credits">CREDITS</h1>
+            <div id="credits-scroll">
+                <div class="scroll-wrap">
+                    <p style="color:var(--neon)">LEAD DESIGNER</p><p>AIDEN B.</p>
+                    <p style="color:var(--cyan)">AUDIO ENGINE</p><p>OSCILLATOR V3</p>
+                    <p style="color:var(--zombie)">ART STYLE</p><p>NEON CYBERPUNK</p>
+                </div>
+            </div>
+            <button onmouseover="Snd.ui('hover')" onclick="ui.nav('m-main')" data-t="back" style="margin-top:15px;">Back</button>
         </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
 <script>
-    const Audio = {
-        ctx: null,
-        init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-        play(f, type, dur, vol, sweep=0) {
+    /* --- AUDIO ENGINE --- */
+    const Snd = {
+        ctx: null, mg: null,
+        init() {
+            if (this.ctx) return;
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.mg = this.ctx.createGain(); this.mg.connect(this.ctx.destination);
+        },
+        osc(f, t, d, v, s=0) {
             if(!this.ctx) return;
             const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-            o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime);
-            if(sweep) o.frequency.exponentialRampToValueAtTime(sweep, this.ctx.currentTime + dur);
-            g.gain.setValueAtTime(vol, this.ctx.currentTime);
-            g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + dur);
-            o.connect(g); g.connect(this.ctx.destination);
-            o.start(); o.stop(this.ctx.currentTime + dur);
+            o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+            if(s) o.frequency.exponentialRampToValueAtTime(s, this.ctx.currentTime + d);
+            g.gain.setValueAtTime(v, this.ctx.currentTime);
+            g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + d);
+            o.connect(g); g.connect(this.mg);
+            o.start(); o.stop(this.ctx.currentTime + d);
         },
-        sfx(t) {
-            if(t==='shoot') this.play(500, 'square', 0.1, 0.4, 60);
-            if(t==='hit') this.play(100, 'sawtooth', 0.2, 0.5, 10);
-            if(t==='jump') this.play(300, 'sine', 0.1, 0.2, 500);
-            if(t==='win') this.play(440, 'triangle', 0.5, 0.3, 880);
+        ui(type) {
+            if(type==='hover') this.osc(800, 'sine', 0.05, 0.05);
+            if(type==='click') this.osc(400, 'square', 0.1, 0.1, 100);
+        },
+        playSfx(t, cls) {
+            if(t==='shoot') cls === 'assault' ? this.osc(400, 'square', 0.1, 0.2, 50) : this.osc(150, 'sawtooth', 0.2, 0.3, 20);
+            if(t==='jump') this.osc(200, 'sine', 0.15, 0.1, 400);
+            if(t==='hit') this.osc(60, 'sawtooth', 0.1, 0.4, 10);
+            if(t==='hurt') this.osc(100, 'noise', 0.2, 0.2); // Simple noise sim
+        },
+        music() {
+            if(!this.ctx || this.looping) return;
+            this.looping = true;
+            let step = 0;
+            const notes = [55, 55, 62, 55, 58, 55, 65, 55]; // Bass sequence
+            setInterval(() => {
+                if(game.active) {
+                    this.osc(notes[step % 8], 'sawtooth', 0.2, 0.1);
+                    if(step % 4 === 0) this.osc(100, 'sine', 0.1, 0.1); // Kick
+                    step++;
+                }
+            }, 200);
         }
     };
 
+    const i18n = {
+        EN: { title: "DEAD ZONE", btn_campaign: "CAMPAIGN", btn_endless: "SURVIVAL", btn_credits: "CREDITS", back: "BACK", choose_class: "LOADOUT", cls_1: "ASSAULT", cls_2: "TANK", sectors: "SECTORS" },
+        ES: { title: "ZONA MUERTA", btn_campaign: "CAMPAÑA", btn_endless: "SUPERVIVENCIA", btn_credits: "CRÉDITOS", back: "VOLVER", choose_class: "CLASE", cls_1: "ASALTO", cls_2: "TANQUE", sectors: "SECTORES" },
+        JA: { title: "デッドゾーン", btn_campaign: "キャンペーン", btn_endless: "サバイバル", btn_credits: "クレジット", back: "戻る", choose_class: "ロードアウト", cls_1: "アサルト", cls_2: "タンク", sectors: "セクター" }
+    };
+
     const ui = {
-        mission: 1, mode: 'campaign',
-        setLang() { Audio.init(); this.nav('m-main'); },
-        nav(id) {
-            if(id === 'm-campaign') game.renderCampaign();
-            document.querySelectorAll('.menu-card').forEach(c => c.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            document.getElementById('ui-layer').classList.remove('hidden');
+        lang: 'EN', mode: 'campaign', mission: 1,
+        setLang(l) { Snd.ui('click'); this.lang = l; document.querySelectorAll('[data-t]').forEach(el => el.innerText = i18n[l][el.getAttribute('data-t')]); this.nav('m-main'); },
+        nav(id) { Snd.ui('click'); document.querySelectorAll('.menu-card').forEach(c => c.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); if(id === 'm-campaign') this.renderCampaign(); },
+        renderCampaign() {
+            const container = document.getElementById('campaign-grid'); container.innerHTML = '';
+            for(let i=1; i<=20; i++) {
+                const b = document.createElement('button');
+                b.innerText = i <= game.progress ? i : 'X';
+                b.disabled = i > game.progress;
+                b.onmouseover = () => Snd.ui('hover');
+                b.onclick = () => { Snd.ui('click'); this.mission = i; this.mode = 'campaign'; this.nav('m-class'); };
+                container.appendChild(b);
+            }
         },
-        setMode(m) { this.mode = m; this.nav('m-class'); },
-        setMission(i) { this.mission = i; this.mode = 'campaign'; this.nav('m-class'); }
+        setMode(m) { Snd.ui('click'); this.mode = m; this.nav('m-class'); }
     };
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onresize = resize; resize();
 
     const game = {
-        active: false, raf: null, progress: parseInt(localStorage.getItem('dz_redux_v7')) || 1,
-        player: null, zombies: [], bullets: [], shells: [], platforms: [],
-        shake: 0, kills: 0, frame: 0, dmgRed: 0,
-
-        renderCampaign() {
-            const menu = document.getElementById('m-campaign');
-            menu.innerHTML = '<h1>SECTORS</h1><div class="sub">SELECT YOUR ENTRY POINT</div>';
-            const grid = document.createElement('div');
-            grid.style.display = 'grid'; grid.style.gridTemplateColumns = 'repeat(5, 1fr)'; grid.style.gap = '10px';
-            for(let i=1; i<=20; i++) {
-                const b = document.createElement('button');
-                const isLocked = i > this.progress;
-                b.innerText = isLocked ? '???' : i;
-                b.disabled = isLocked;
-                b.onclick = () => ui.setMission(i);
-                grid.appendChild(b);
-            }
-            menu.appendChild(grid);
-            const back = document.createElement('button'); back.innerText = "BACK"; back.onclick = () => ui.nav('m-main');
-            menu.appendChild(back);
-        },
+        active: false, progress: parseInt(localStorage.getItem('dz_redux_v10')) || 1,
+        player: null, zombies: [], bullets: [], cameraX: 0, shake: 0, groundY: 0,
 
         launch(cls) {
-            this.stop(); // Clear any existing loop
-            this.active = true; this.kills = 0; this.zombies = []; this.bullets = []; this.shells = [];
-            this.generateLevel();
-            const s = cls === 'assault' ? {hp:100, f:130, d:1.5} : {hp:250, f:450, d:6};
-            this.player = { x: 200, y: 0, vx: 0, vy: 0, hp: s.hp, mHp: s.hp, fire: s.f, dmg: s.d, dir: 1, grounded: false };
-            
+            Snd.ui('click'); Snd.music();
+            this.active = true; this.zombies = []; this.bullets = []; this.groundY = canvas.height - 100;
+            const stats = cls === 'assault' ? {hp:100, dmg:2, fire:120} : {hp:250, dmg:7, fire:450};
+            this.player = { x: 200, y: this.groundY-70, vx:0, vy:0, ...stats, mHp: stats.hp, dir: 1, cls: cls };
             document.getElementById('ui-layer').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
-            document.getElementById('obj-ui').classList.remove('hidden');
             this.loop();
-        },
-
-        stop() {
-            this.active = false;
-            if(this.raf) cancelAnimationFrame(this.raf);
-        },
-
-        generateLevel() {
-            this.platforms = [];
-            for(let i=0; i<400; i++) this.platforms.push({ x: i*800, y: canvas.height-140, w: 750, h: 400 });
         },
 
         update() {
             if(!this.active) return;
-            this.frame++;
-            if(this.dmgRed > 0) this.dmgRed -= 0.05;
             const p = this.player;
+
+            if(keys.KeyA) { p.vx -= 1.5; p.dir = -1; }
+            if(keys.KeyD) { p.vx += 1.5; p.dir = 1; }
+            if(keys.KeyW && p.y >= this.groundY - 71) { p.vy = -16; Snd.playSfx('jump'); }
+            
+            p.vx *= 0.85; p.vy += 0.8; p.x += p.vx; p.y += p.vy;
+            if(p.y > this.groundY - 70) { p.y = this.groundY - 70; p.vy = 0; }
+
+            this.cameraX += (p.x - canvas.width/3 - this.cameraX) * 0.1;
             this.shake *= 0.9;
 
-            if(keys.KeyA) { p.vx -= 1.8; p.dir = -1; }
-            if(keys.KeyD) { p.vx += 1.8; p.dir = 1; }
-            if(keys.KeyW && p.grounded) { p.vy = -19; p.grounded = false; Audio.sfx('jump'); }
-            
-            p.vx *= 0.85; p.vy += 0.9; p.x += p.vx; p.y += p.vy;
-            p.grounded = false;
-            this.platforms.forEach(pl => {
-                if(p.x+20 > pl.x && p.x-20 < pl.x+pl.w && p.y+70 > pl.y && p.y+70 < pl.y+40 && p.vy >= 0) {
-                    p.y = pl.y-70; p.vy = 0; p.grounded = true;
-                }
-            });
-
             if(keys.Space && Date.now() - (p.lastShot||0) > p.fire) {
-                this.bullets.push({ x: p.x + (p.dir*40), y: p.y+20, vx: p.dir*40, vy: (Math.random()-0.5)*4 });
-                this.shells.push({ x: p.x, y: p.y+20, vx: -p.dir*5, vy: -6, r: 0 });
-                p.lastShot = Date.now(); Audio.sfx('shoot'); this.shake = 10;
+                this.bullets.push({x: p.x + (p.dir*20), y: p.y+25, vx: p.dir*35});
+                p.lastShot = Date.now(); this.shake = 6; Snd.playSfx('shoot', p.cls);
             }
 
-            // Zombie Logic
-            if(Math.random() < 0.03 + (this.kills * 0.0001)) {
-                this.zombies.push({ x: p.x + 1400, y: -200, vy: 0, hp: 5 + (ui.mission), spd: 3 + Math.random()*3 });
+            if(Math.random() < 0.03 + (ui.mission*0.005)) {
+                this.zombies.push({x: p.x + canvas.width, y: this.groundY-80, hp: 5+ui.mission});
             }
-
-            this.zombies.forEach((z, zi) => {
-                z.x += (p.x > z.x ? 1 : -1) * z.spd;
-                z.vy += 0.8; z.y += z.vy;
-                this.platforms.forEach(pl => { if(z.x+20 > pl.x && z.x-20 < pl.x+pl.w && z.y+90 > pl.y && z.y+90 < pl.y+40 && z.vy >= 0) { z.y = pl.y-90; z.vy = 0; } });
-                if(Math.abs(p.x - z.x) < 50 && Math.abs(p.y - z.y) < 70) { p.hp -= 0.6; this.dmgRed = 0.3; }
-            });
 
             this.bullets.forEach((b, bi) => {
                 b.x += b.vx;
                 this.zombies.forEach((z, zi) => {
-                    if(Math.abs(b.x - z.x) < 45 && Math.abs(b.y - z.y) < 90) {
-                        z.hp -= p.dmg; this.bullets.splice(bi, 1);
-                        if(z.hp <= 0) { this.zombies.splice(zi, 1); this.kills++; Audio.sfx('hit'); }
+                    if(Math.abs(b.x - z.x) < 40 && Math.abs(b.y - z.y) < 80) {
+                        z.hp -= p.dmg; this.bullets.splice(bi, 1); Snd.playSfx('hit');
+                        if(z.hp <= 0) this.zombies.splice(zi, 1);
                     }
                 });
             });
 
-            this.shells.forEach((sh, si) => { sh.x += sh.vx; sh.y += sh.vy; sh.vy += 0.8; sh.r += 0.2; if(sh.y > canvas.height) this.shells.splice(si,1); });
+            this.zombies.forEach(z => {
+                z.x += (p.x > z.x ? 2.5 : -2.5);
+                if(Math.abs(p.x - z.x) < 30) { p.hp -= 0.5; Snd.playSfx('hurt'); }
+            });
 
-            // WIN CONDITION - FIXED FREEZE
-            const goal = 1000 + (ui.mission * 1000);
+            const goal = 2000 + (ui.mission * 1000);
             if(ui.mode === 'campaign' && p.x > goal) {
-                Audio.sfx('win');
-                if(ui.mission === this.progress) { this.progress++; localStorage.setItem('dz_redux_v7', this.progress); }
-                this.stop();
-                ui.nav('m-campaign');
-                return; // Break out of update
+                if(ui.mission === this.progress) { this.progress++; localStorage.setItem('dz_redux_v10', this.progress); }
+                this.active = false; ui.nav('m-campaign');
             }
-
-            if(p.hp <= 0 || p.y > canvas.height + 200) { this.stop(); location.reload(); }
-            
-            document.getElementById('obj-title').innerText = ui.mode === 'endless' ? "SURVIVAL" : `SECTOR ${ui.mission}`;
-            document.getElementById('obj-desc').innerText = ui.mode === 'endless' ? `KILLS: ${this.kills}` : `GOAL: ${goal}m (DIST: ${Math.floor(p.x)}m)`;
+            if(p.hp <= 0) { this.active = false; location.reload(); }
+            document.getElementById('hp-fill').style.width = (p.hp/p.mHp*100) + '%';
         },
 
         draw() {
-            ctx.fillStyle = '#010102'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if(this.dmgRed > 0) { ctx.fillStyle = `rgba(255,0,0,${this.dmgRed})`; ctx.fillRect(0,0,canvas.width,canvas.height); }
-            const camX = this.player.x - canvas.width/3;
-            
-            ctx.save();
-            ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
+            ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for(let i=0; i<15; i++) {
+                let bx = (i * 300) - (this.cameraX * 0.3) % 300;
+                ctx.fillStyle = '#05050a'; ctx.fillRect(bx, 150, 180, canvas.height);
+            }
+            ctx.save(); ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
+            ctx.fillStyle = '#08080c'; ctx.fillRect(0, this.groundY, canvas.width, 100);
+            ctx.fillStyle = varColor('--neon'); ctx.globalAlpha = 0.3; ctx.fillRect(0, this.groundY, canvas.width, 2); ctx.globalAlpha = 1;
 
-            this.platforms.forEach(p => {
-                ctx.fillStyle = '#08080a'; ctx.fillRect(p.x - camX, p.y, p.w, p.h);
-                ctx.fillStyle = '#ff003c'; ctx.fillRect(p.x - camX, p.y, p.w, 4);
-            });
-
-            // Player silhouette
-            ctx.fillStyle = '#fff'; ctx.fillRect(this.player.x - camX - 15, this.player.y, 30, 70);
+            const cx = this.cameraX;
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = varColor('--cyan');
+            ctx.fillRect(this.player.x - cx - 15, this.player.y, 30, 70);
             
-            // Zombies - Glow
             this.zombies.forEach(z => {
-                ctx.shadowBlur = 15; ctx.shadowColor = '#39ff14';
-                ctx.fillStyle = '#000'; ctx.strokeStyle = '#39ff14'; ctx.lineWidth = 2;
-                ctx.fillRect(z.x - camX - 25, z.y, 50, 90);
-                ctx.strokeRect(z.x - camX - 25, z.y, 50, 90);
-                ctx.fillStyle = '#39ff14'; ctx.fillRect(z.x - camX - 10, z.y+15, 6, 6); ctx.fillRect(z.x - camX + 4, z.y+15, 6, 6);
-                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#000'; ctx.strokeStyle = varColor('--zombie'); ctx.lineWidth = 2;
+                ctx.fillRect(z.x - cx - 20, z.y, 40, 80); ctx.strokeRect(z.x - cx - 20, z.y, 40, 80);
             });
 
-            ctx.fillStyle = '#fff'; this.bullets.forEach(b => ctx.fillRect(b.x - camX, b.y, 25, 4));
-            ctx.fillStyle = '#ffcc00'; this.shells.forEach(sh => {
-                ctx.save(); ctx.translate(sh.x - camX, sh.y); ctx.rotate(sh.r); ctx.fillRect(-2,-4,4,8); ctx.restore();
-            });
-
+            ctx.fillStyle = varColor('--cyan');
+            this.bullets.forEach(b => ctx.fillRect(b.x - cx, b.y, 25, 2));
             ctx.restore();
-            document.getElementById('hp-fill').style.width = (this.player.hp / this.player.mHp * 100) + '%';
         },
 
-        loop() { 
-            if(!this.active) return;
-            this.update(); 
-            this.draw(); 
-            this.raf = requestAnimationFrame(() => this.loop()); 
-        }
+        loop() { if(!this.active) return; this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
     };
 
-    const keys = {};
-    window.onkeydown = e => keys[e.code] = true;
-    window.onkeyup = e => keys[e.code] = false;
+    function varColor(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+    const keys = {}; window.onkeydown = e => keys[e.code] = true; window.onkeyup = e => keys[e.code] = false;
 </script>
 </body>
 </html>
