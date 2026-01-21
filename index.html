@@ -1,418 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>DEAD ZONE: SURVIVOR COLONIES - Aiden B.</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <style>
-        :root { --primary: #ff4d4d; --bg: #050505; --card: #111; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        canvas { display: block; filter: contrast(1.2) brightness(0.9); }
+<meta charset="UTF-8">
+<title>DEAD ZONE: REDUX - Aiden B.</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+:root { --neon: #ff003c; --cyan: #00f2ff; --bg: #050508; --gold: #ffcc00; }
+body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; user-select: none; }
 
-        /* --- STYLISH MENU --- */
-        #ui { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; 
-              background: radial-gradient(circle, rgba(20,0,0,0.4) 0%, rgba(0,0,0,0.95) 100%); z-index: 100; transition: 0.5s; }
-        
-        .menu-card { background: var(--card); padding: 50px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);
-                     text-align: center; width: 420px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,1);
-                     overflow: hidden; animation: fadeIn 1s ease-out; }        
-        .menu-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; 
-                             background: linear-gradient(90deg, transparent, var(--primary), transparent); animation: scan 3s infinite linear; }
+/* CRT & Scanline Overlay */
+#crt::before { content: " "; position: absolute; inset: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 200; background-size: 100% 3px, 3px 100%; pointer-events: none; }
 
-        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+canvas { display: block; filter: contrast(1.2) saturate(1.4); }
 
-        h1 { color: var(--primary); margin: 0; font-size: 42px; text-transform: uppercase; letter-spacing: 6px;
-             font-weight: 900; position: relative; animation: glitch 4s infinite; }
+/* UI SYSTEM */
+#ui-layer { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, rgba(40,0,5,0.9) 0%, rgba(0,0,0,1) 100%); z-index: 100; }
+.menu-card { background: #0a0a0f; padding: 40px; border: 1px solid var(--neon); text-align: center; width: 480px; box-shadow: 0 0 50px rgba(255, 0, 60, 0.4); }
 
-        @keyframes glitch {
-            0% { text-shadow: 2px 0 red, -2px 0 blue; }
-            1% { text-shadow: -2px 0 red, 2px 0 blue; }
-            2% { text-shadow: 0 0 white; }
-            100% { text-shadow: 0 0 white; }
-        }
+h1 { color: #fff; margin: 0; font-size: 42px; letter-spacing: 10px; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 20px var(--neon); } .sub { color: var(--cyan); font-size: 11px; letter-spacing: 3px; margin-bottom: 30px; opacity: 0.8; }
 
-        .credit { color: #555; font-size: 12px; margin-bottom: 30px; letter-spacing: 2px; text-transform: uppercase; }
+button { width: 100%; padding: 16px; margin: 8px 0; border: 1px solid #444; background: #000; color: #aaa; cursor: pointer; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; transition: 0.2s; }
+button:hover { border-color: var(--neon); color: #fff; background: rgba(255, 0, 60, 0.1); transform: scale(1.02); }
 
-        button { width: 100%; padding: 16px; margin: 10px 0; border: 1px solid rgba(255,77,77,0.3); border-radius: 2px;
-                 background: rgba(255,77,77,0.05); color: #fff; font-weight: bold; cursor: pointer; 
-                 font-size: 14px; letter-spacing: 2px; text-transform: uppercase; transition: 0.3s; position: relative; }
-        
-        button:hover { background: var(--primary); color: #000; box-shadow: 0 0 20px rgba(255,77,77,0.4); transform: translateX(5px); }
-        
-        .btn-sub { background: rgba(52, 152, 219, 0.1); border-color: rgba(52, 152, 219, 0.3); }
-        .btn-sub:hover { background: #3498db; border-color: #3498db; color: #fff; box-shadow: 0 0 20px rgba(52, 152, 219, 0.4); }
+.hidden { display: none !important; }
+#hud { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+.hp-card { background: rgba(0,0,0,0.8); padding: 12px; border-left: 4px solid var(--neon); margin-bottom: 8px; font-size: 14px; font-weight: bold; }
+#obj-ui { position: absolute; top: 20px; right: 20px; text-align: right; color: var(--cyan); font-size: 16px; font-weight: 900; text-shadow: 0 0 10px #000; }
 
-        input { width: 100%; padding: 14px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #222; 
-                text-align: center; border-radius: 2px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary); }
-
-        #hud { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
-        .hp-card { background: rgba(0,0,0,0.8); padding: 12px; border-left: 3px solid var(--primary); margin-bottom: 8px; font-size: 14px; letter-spacing: 1px; }
-
-        #respawn-timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; color: var(--primary); font-weight: 900; pointer-events: none; }
-        .hidden { display: none !important; }
-        #status { position: absolute; bottom: 30px; width: 100%; text-align: center; color: var(--primary); font-size: 12px; letter-spacing: 2px; }
-        
-        /* Audio Toggle */
-        #mute-btn { position: absolute; bottom: 20px; right: 20px; background: none; border: 1px solid #333; color: #555; padding: 5px 10px; width: auto; font-size: 10px; }
-    </style>
+#win-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 150; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 4px solid var(--cyan); margin: 20px; }
+#win-screen h2 { font-size: 60px; color: var(--cyan); margin: 0; letter-spacing: 10px; }
+</style>
 </head>
 <body>
+<div id="crt"></div>
+<div id="hud" class="hidden"><div id="stats-list"></div></div>
+<div id="obj-ui" class="hidden"></div>
 
-    <div id="hud" class="hidden">        
-        <div id="stats-list"></div>
-    </div>
+<div id="win-screen" class="hidden">
+<h2 id="t-win-title">MISSION COMPLETE</h2>
+<p id="t-win-desc" style="letter-spacing: 5px;">SECTOR PURIFIED</p>
+<button id="t-next-btn" onclick="game.nextMission()" style="width:350px; border-color:var(--cyan); color:var(--cyan)">PROCEED TO NEXT SECTOR</button>
+<button id="t-menu-btn" onclick="location.reload()" style="width:350px; background:#222">ABORT MISSION</button>
+</div>
 
-    <div id="respawn-timer" class="hidden">5</div>
-    <div id="status">SYSTEMS ONLINE</div>
+<div id="ui-layer">
+<!-- 1. Language Selection -->
+<div id="m-lang" class="menu-card">
+<h1>SELECT LANGUAGE</h1>
+<button onclick="ui.setLang('en')">English</button>
+<button onclick="ui.setLang('es')">Español</button>
+<button onclick="ui.setLang('de')">Deutsch</button>
+<button onclick="ui.setLang('ja')">日本語</button>
+<button onclick="ui.setLang('zh')">中文</button>
+</div>
 
-    <div id="ui">
-        <div id="menu-main" class="menu-card">
-            <h1>DEAD ZONE</h1>
-            <div class="credit">A Survival Experience By Aiden B.</div>
-            <button onclick="startMode('single', false)">Start Mission</button>
-            <button class="btn-sub" onclick="startMode('split', false)">Split-Screen Co-op</button>
-            <button class="btn-sub" onclick="startMode('split', true)">Split-Screen Deathmatch</button>
-            <button onclick="showMenu('menu-online')">Access Network</button>
-        </div>
+<!-- 2. Main Menu -->
+<div id="m-main" class="menu-card hidden"> <h1 id="t-game-title">DEAD ZONE</h1>
+<div class="sub">BY AIDEN B.</div>
+<button id="t-campaign" onclick="ui.nav('m-campaign')">CAMPAIGN</button>
+<button id="t-tutorial" onclick="ui.setMission(0)" style="border-color:var(--cyan); color:var(--cyan)">TUTORIAL</button>
+<button id="t-online" onclick="ui.nav('m-online')">ONLINE COLONY</button>
+<button id="t-split" onclick="ui.setMode('split')">SPLIT SCREEN</button>
+</div>
 
-        <div id="menu-online" class="menu-card hidden">
-            <h1>Network</h1>
-            <div class="credit">Select a Colony or Private Frequency</div>
-            <button onclick="connectOnline('Alpha', false)">Colony Alpha (Co-op)</button>
-            <button onclick="connectOnline('Beta', true)">Colony Beta (PVP)</button>
-            <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-            <input type="text" id="custom-id" placeholder="Private Frequency">
-            <button class="btn-sub" onclick="startMode('host', false)">Host Private</button>
-            <input type="text" id="join-id" placeholder="Frequency Code">
-            <button class="btn-sub" onclick="startMode('join', false)">Join Frequency</button>
-            <button class="btn-sub" style="background:#333" onclick="showMenu('menu-main')">Return</button>
-        </div>
-    </div>
+<!-- 3. Campaign Menu -->
+<div id="m-campaign" class="menu-card hidden">
+<h1 id="t-camp-title">CAMPAIGN</h1>
+<button onclick="ui.setMission(1)">M1: THE GATES</button>
+<button onclick="ui.setMission(2)">M2: THE SWARM</button>
+<button onclick="ui.setMission(3)">M3: HEAVY METAL</button>
+<button id="t-back" onclick="ui.nav('m-main')">BACK</button>
+</div> <!-- 4. Online -->
+<div id="m-online" class="menu-card hidden">
+<h1 id="t-net-title">NETWORK</h1>
+<input type="text" id="room-input" placeholder="ROOM CODE">
+<button id="t-host" onclick="ui.setMode('host')">Host Private</button>
+<button id="t-join" onclick="ui.setMode('join')">Join Private</button>
+<button onclick="ui.nav('m-main')">Back</button>
+</div>
 
-    <button id="mute-btn" onclick="toggleAudio()">Audio: OFF</button>
-    <canvas id="gameCanvas"></canvas>
+<!-- 5. Class Selection -->
+<div id="m-class" class="menu-card hidden">
+<h1 id="t-role-title">SELECT ROLE</h1>
+<button onclick="game.launch('assault')">Assault (Rifle)</button>
+<button onclick="game.launch('tank')">Tank (Shotgun)</button>
+<button onclick="game.launch('medic')">Medic (Pulse)</button>
+</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
-    /** --- AUDIO ENGINE (Procedural Synth) --- **/
-    let audioCtx = null;
-    let mainGain = null;    let isMuted = true;
+/** --- TRANSLATIONS --- **/
+const TRANSLATIONS = {
+en: { gameTitle: "DEAD ZONE", campaign: "Campaign", tutorial: "Tutorial", online: "Online Colony", split: "Split Screen", campTitle: "Campaign", netTitle: "Network", host: "Host Private", join: "Join Private", roleTitle: "Select Role", back: "Back", winTitle: "COMPLETE", winDesc: "Sector Secured.", nextBtn: "Next Mission", menuBtn: "Main Menu" },
+es: { gameTitle: "ZONA MUERTA", campaign: "Campaña", tutorial: "Tutorial", online: "En Línea", split: "Dividida", campTitle: "Campaña", netTitle: "Red", host: "Crear Sala", join: "Unirse", roleTitle: "Clase", back: "Volver", winTitle: "COMPLETO", winDesc: "Sector Seguro.", nextBtn: "Siguiente", menuBtn: "Menú" },
+de: { gameTitle: "TOTENZONE", campaign: "Kampagne", tutorial: "Tutorial", online: "Netzwerk", split: "Split", campTitle: "Kampagne", netTitle: "Netzwerk", host: "Hosten", join: "Beitreten", roleTitle: "Klasse", back: "Zurück", winTitle: "ERLEDIGT", winDesc: "Sektor sicher.", nextBtn: "Weiter", menuBtn: "Menü" },
+ja: { gameTitle: "デッドゾーン", campaign: "キャンペーン", tutorial: "チュートリアル", online: "オンライン", split: "画面分割", campTitle: "キャンペーン", netTitle: "ネットワーク", host: "ホスト", join: "参加", roleTitle: "クラス", back: "戻る", winTitle: "完了", winDesc: "エリア確保。", nextBtn: "次へ", menuBtn: "戻る" },
+zh: { gameTitle: "死亡地带", campaign: "战役", tutorial: "新手", online: "在线", split: "分屏", campTitle: "战役", netTitle: "网络", host: "创建", join: "加入", roleTitle: "选择", back: "返回", winTitle: "完成", winDesc: "区域清除。", nextBtn: "下一关", menuBtn: "主菜单" }
+};
 
-    function initAudio() {
-        if (audioCtx) return;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        mainGain = audioCtx.createGain();
-        mainGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        mainGain.connect(audioCtx.destination);
-        playAmbient();
-    }
+/** --- UI CONTROLLER --- **/
+const ui = {
+lang: 'en', mission: 0, mode: '',
+setLang(l) {
+this.lang = l; const t = TRANSLATIONS[l]; document.getElementById('t-game-title').innerText = t.gameTitle;
+document.getElementById('t-campaign').innerText = t.campaign;
+document.getElementById('t-tutorial').innerText = t.tutorial;
+document.getElementById('t-online').innerText = t.online;
+document.getElementById('t-split').innerText = t.split;
+document.getElementById('t-camp-title').innerText = t.campTitle;
+document.getElementById('t-net-title').innerText = t.netTitle;
+document.getElementById('t-host').innerText = t.host;
+document.getElementById('t-join').innerText = t.join;
+document.getElementById('t-role-title').innerText = t.roleTitle;
+document.getElementById('t-back').innerText = t.back;
+document.getElementById('t-win-title').innerText = t.winTitle;
+document.getElementById('t-win-desc').innerText = t.winDesc;
+document.getElementById('t-next-btn').innerText = t.nextBtn;
+document.getElementById('t-menu-btn').innerText = t.menuBtn;
+this.nav('m-main');
+},
+nav(id) {
+document.querySelectorAll('.menu-card').forEach(c => c.classList.add('hidden'));
+document.getElementById(id).classList.remove('hidden');
+Audio.init();
+},
+setMission(idx) { this.mission = idx; this.mode = 'single'; this.nav('m-class'); },
+setMode(m) { this.mode = m; this.nav('m-class'); }
+};
 
-    function playAmbient() {
-        const osc = audioCtx.createOscillator();
-        const lfo = audioCtx.createOscillator();        const lfoGain = audioCtx.createGain();
-        
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(40, audioCtx.currentTime);
-        
-        lfo.frequency.setValueAtTime(0.2, audioCtx.currentTime);
-        lfoGain.gain.setValueAtTime(10, audioCtx.currentTime);
-        
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
-        
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(200, audioCtx.currentTime);
-        
-        osc.connect(filter);
-        filter.connect(mainGain);
-        
-        osc.start();
-        lfo.start();
-    }
+/** --- AUDIO ENGINE --- **/
+const Audio = {
+ctx: null, master: null, beat: 0, nextTime: 0,
+init() { if (this.ctx) return; this.ctx = new AudioContext(); this.master = this.ctx.createGain(); this.master.gain.value = 0.15; this.master.connect(this.ctx.destination); this.nextTime = this.ctx.currentTime; this.tick(); }, play(f, t, d, v, slide = 0) { const o = this.ctx.createOscillator(); const g = this.ctx.createGain(); o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime); if(slide) o.frequency.exponentialRampToValueAtTime(slide, this.ctx.currentTime + d); g.gain.setValueAtTime(v, this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d); o.connect(g); g.connect(this.master); o.start(); o.stop(this.ctx.currentTime + d); },
+tick() { while (this.nextTime < this.ctx.currentTime + 0.1) { this.step(this.beat, this.nextTime); this.nextTime += 0.14; this.beat++; } setTimeout(() => this.tick(), 25); },
+step(b, t) {
+if (!game.active) return;
+const s = b % 16; const m = Math.floor(b / 16) % 8;
+if (s === 0 || s === 8) this.play(55, 'sine', 0.2, 0.8, 1);
+if (s === 4 || s === 12) this.play(150, 'triangle', 0.1, 0.3);
+if (s % 4 === 0) this.play([40, 30, 45, 35, 40, 30, 55, 45][m], 'sawtooth', 0.4, 0.1);
+if (m > 3 && s % 4 === 2) this.play([220, 261, 293, 329][Math.random()*4|0], 'square', 0.2, 0.04);
+},
+sfx(type) { if(!this.ctx) return; if(type==='shoot') this.play(800, 'square', 0.08, 0.1, 100); if(type==='hit') this.play(60, 'sawtooth', 0.2, 0.3); }
+};
 
-    function playSFX(freq, type, dur) {
-        if (!audioCtx || isMuted) return;
-        const osc = audioCtx.createOscillator();        const g = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1, audioCtx.currentTime + dur);
-        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);
-        osc.connect(g);
-        g.connect(mainGain);
-        osc.start();
-        osc.stop(audioCtx.currentTime + dur);
-    }
+/** --- GAME ENGINE --- **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    function toggleAudio() {
-        if (!audioCtx) initAudio();
-        isMuted = !isMuted;
-        mainGain.gain.setTargetAtTime(isMuted ? 0 : 0.1, audioCtx.currentTime, 0.1);
-        document.getElementById('mute-btn').innerText = isMuted ? "Audio: OFF" : "Audio: ON";
-    }
+const game = {
+active: false, isSplit: false, cameraX1: 0, cameraX2: 0, shake: 0,
+players: {}, zombies: [], bullets: [], platforms: [], bgs: [], particles: [], kills: 0,
+missions: [
+{ targetDist: 1000, targetKills: 0, spawn: 0, types: [], tutorial: true },
+{ targetDist: 1500, targetKills: 0, spawn: 0.015, types: [0] },
+{ targetDist: 0, targetKills: 30, spawn: 0.025, types: [1] },
+{ targetDist: 0, targetKills: 8, spawn: 0.015, types: [2] }
+],
+zTypes: [{ hp: 2, spd: 1.5, color: '#00ff66' }, { hp: 1, spd: 3.2, color: '#ffcc00' }, { hp: 15, spd: 0.8, color: '#9900ff' }],
 
-    /** --- GAME ENGINE --- **/
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+launch(cls) {
+this.generateLevel();
+this.players = { 'p1': this.createPlayer('p1', 0, cls) };
+if (ui.mode === 'split') { this.isSplit = true; this.players['p2'] = this.createPlayer('p2', 1, 'tank'); }
+this.active = true; this.shake = 0; this.kills = 0; this.zombies = []; this.bullets = []; this.particles = [];
+document.getElementById('ui-layer').classList.add('hidden');
+document.getElementById('hud').classList.remove('hidden');
+document.getElementById('obj-ui').classList.remove('hidden');
+requestAnimationFrame(() => this.loop());
+},
 
-    const COLORS = { p1: '#3498db', p2: '#e74c3c', ground: '#111', zombie: '#4ade80', runner: '#f1c40f', tank: '#8e44ad' };
-    const SETTINGS = { gravity: 0.5, friction: 0.8, spawnRate: 0.012, jumpPower: -17 };
+generateLevel() {
+this.platforms = []; this.bgs = [];
+for(let i=0; i<100; i++) {
+this.platforms.push({ x: i*600, y: canvas.height-120, w: 650, h: 200 });
+this.bgs.push({ x: i*400, w: 200+Math.random()*200, h: 300+Math.random()*400, s: 0.2+Math.random()*0.3 });
+}
+},
 
-    let peer = null, hostConn = null, clientConns = [];
-    let isHost = false, gameActive = false, myId = null, isSplit = false, isPVP = false;
-    let cameraX1 = 0, cameraX2 = 0, players = {}, zombies = [], bullets = [], platforms = [];
-    const keys = {};
+createPlayer(id, idx, cls) {
+const s = { assault: { hp: 100, f: 150, dmg: 1 }, tank: { hp: 250, f: 500, dmg: 3 }, medic: { hp: 130, f: 300, dmg: 1.5 } }[cls];
+return { id, x: 100, y: 0, vx: 0, vy: 0, color: idx===0?'#00f2ff':'#ff003c', hp: s.hp, maxHp: s.hp, cls, fire: s.f, dmg: s.dmg, inputs: {}, grounded: false };
+},
 
-    window.onkeydown = e => { keys[e.code] = true; if(e.code === 'Space') playSFX(150, 'square', 0.1); };
-    window.onkeyup = e => keys[e.code] = false;
+spawnParticle(x, y, color, count=5) {
+for(let i=0; i<count; i++) this.particles.push({ x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, color });
+},
 
-    function generateLevel() {
-        platforms = [];
-        let curX = 0;        for(let i=0; i<100; i++) {
-            let width = 600 + Math.random() * 600;
-            platforms.push({ x: curX, y: canvas.height - 120, w: width, h: 200 });
-            curX += width + 140 + Math.random() * 60;
-        }
-    }
+update() {
+if (!this.active) return;
+const mis = this.missions[ui.mission];
+if(this.shake > 0) this.shake *= 0.9;
 
-    function showMenu(id) {
-        document.querySelectorAll('.menu-card').forEach(m => m.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-        playSFX(400, 'sine', 0.05);
-    }
+for (let id in this.players) {
+let p = this.players[id];
+p.inputs = id === 'p1' ? { l: keys['KeyA'], r: keys['KeyD'], j: keys['KeyW'], s: keys['Space'] } : { l: keys['ArrowLeft'], r: keys['ArrowRight'], j: keys['ArrowUp'], s: keys['Enter'] }; if (p.inputs.l) p.vx -= 1.3; if (p.inputs.r) p.vx += 1.3;
+if (p.inputs.j && p.grounded) { p.vy = -18; p.grounded = false; }
+p.vx *= 0.85; p.vy += 0.7; p.x += p.vx; p.y += p.vy; p.grounded = false;
+this.platforms.forEach(pl => { if(p.x+20 > pl.x && p.x < pl.x+pl.w && p.y+50 > pl.y && p.y+50 < pl.y+30 && p.vy >= 0) { p.y = pl.y-50; p.vy = 0; p.grounded = true; } });
 
-    function startMode(mode, pvp) {
-        initAudio();
-        isPVP = pvp;
-        generateLevel();
-        if (mode === 'single') { isHost = true; myId = 'p1'; players[myId] = createPlayer(myId, 0); launch(); }
-        if (mode === 'split') { isHost = true; isSplit = true; players['p1'] = createPlayer('p1', 0); players['p2'] = createPlayer('p2', 1); launch(); }
-        if (mode === 'host') { const id = document.getElementById('custom-id').value; if(id) initPeer(id); }        if (mode === 'join') { const id = document.getElementById('join-id').value; if(id) connectAsClient(id); }
-    }
+if (p.inputs.s && Date.now() - (p.lastShot || 0) > p.fire) {
+const count = p.cls === 'tank' ? 5 : 1;
+for(let i=0; i<count; i++) this.bullets.push({ x: p.x + 15, y: p.y + 20, vx: (p.vx >= 0 ? 20 : -20), vy: (Math.random()-0.5)*count, dmg: p.dmg });
+p.lastShot = Date.now(); Audio.sfx('shoot'); this.shake = 5;
+}
+if(p.hp <= 0 || p.y > canvas.height) { p.hp = p.maxHp; p.x -= 200; p.y = 0; this.shake = 15; }
+}
 
-    function connectOnline(name, pvp) {
-        initAudio();
-        isPVP = pvp; generateLevel();
-        initPeer(`dead-zone-v10-${name.toLowerCase()}`, true);
-    }
+if (Math.random() < mis.spawn) {
+const t = this.zTypes[mis.types[Math.random()*mis.types.length|0]];
+this.zombies.push({ ...t, x: this.cameraX1 + canvas.width + 100, y: canvas.height - 150, vy: 0, w: 35, h: 55 });
+}
 
-    function initPeer(id, isPublic = false) {
-        peer = new Peer(id);
-        peer.on('open', (openedId) => {
-            myId = openedId; isHost = true;
-            players[openedId] = createPlayer(openedId, 0);
-            launch();
-        });
-        peer.on('error', (err) => {
-            if (err.type === 'unavailable-id' && isPublic) { peer.destroy(); connectAsClient(id); }
-            else alert("Connection Error or ID Taken");
-        });
-        peer.on('connection', conn => {
-            clientConns.push(conn);
-            players[conn.peer] = createPlayer(conn.peer, clientConns.length);
-            conn.on('data', data => { if(data.type==='INPUT') players[conn.peer].inputs = data.inputs; });
-            conn.on('open', () => conn.send({ type: 'SYNC', players, zombies, bullets, platforms, isPVP, forceStart: true }));
-        });
-    }
+this.zombies.forEach((z, zi) => {
+let target = this.players['p1'];
+z.x += (target.x > z.x ? 1 : -1) * z.spd; z.vy += 0.7; z.y += z.vy;
+this.platforms.forEach(pl => { if(z.x+20 > pl.x && z.x < pl.x+pl.w && z.y+z.h > pl.y && z.y+z.h < pl.y+30) { z.y = pl.y-z.h; z.vy = 0; } });
+if (Math.abs(target.x-z.x)<35 && Math.abs(target.y-z.y)<55) { target.hp -= 1; this.shake = 3; }
+});
 
-    function connectAsClient(targetId) {
-        isHost = false; peer = new Peer();
-        peer.on('open', id => {
-            myId = id; hostConn = peer.connect(targetId);
-            hostConn.on('open', () => launch());
-            hostConn.on('data', data => {
-                if (data.type === 'SYNC') {
-                    players = data.players; zombies = data.zombies; bullets = data.bullets; 
-                    platforms = data.platforms; isPVP = data.isPVP;
-                    if(data.forceStart) launch();
-                }
-            });
-        });
-    }    function launch() {
-        gameActive = true;
-        document.getElementById('ui').style.opacity = '0';
-        setTimeout(() => document.getElementById('ui').classList.add('hidden'), 500);
-        document.getElementById('hud').classList.remove('hidden');
-    }
+this.bullets.forEach((b, bi) => {
+b.x += b.vx; b.y += (b.vy || 0);
+this.zombies.forEach((z, zi) => {
+if (Math.abs(b.x-z.x)<30 && Math.abs(b.y-z.y)<50) {
+z.hp -= b.dmg; this.bullets.splice(bi, 1);
+this.spawnParticle(z.x, z.y, '#ff003c');
+if(z.hp <= 0) { this.zombies.splice(zi, 1); this.kills++; Audio.sfx('hit'); }
+}
+});
+});
 
-    function createPlayer(id, idx) {
-        const pColors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'];
-        return { id, x: 100, y: 0, vx: 0, vy: 0, color: pColors[idx % 5], hp: 100, inputs: {}, grounded: false, dead: false, respawnAt: 0 };
-    }
+this.particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; if(p.life <= 0) this.particles.splice(i, 1); });
 
-    function spawnZombie() {
-        if (isPVP) return;
-        const types = [
-            { speed: 1.3, hp: 1, color: COLORS.zombie, w: 30, h: 50 },
-            { speed: 3.0, hp: 0.5, color: COLORS.runner, w: 25, h: 40 },
-            { speed: 0.7, hp: 8, color: COLORS.tank, w: 50, h: 70 }
-        ];
-        const t = types[Math.floor(Math.random() * types.length)];
-        const x = cameraX1 + canvas.width + 100;
-        zombies.push({ ...t, x, y: canvas.height - 300, vy: 0 });
-    }
+if ((mis.targetDist && this.players['p1'].x > mis.targetDist) || (mis.targetKills && this.kills >= mis.targetKills)) {
+this.active = false; document.getElementById('win-screen').classList.remove('hidden');
+}
 
-    function update() {
-        if (!gameActive) return;
+this.cameraX1 += (this.players['p1'].x - (this.isSplit ? canvas.width/4 : canvas.width/2) - this.cameraX1) * 0.1;
+if(this.isSplit) this.cameraX2 += (this.players['p2'].x - canvas.width/4 - this.cameraX2) * 0.1;
+},
 
-        if (isHost) {
-            if (isSplit) {
-                players['p1'].inputs = { l: keys['KeyA'], r: keys['KeyD'], j: keys['KeyW'], s: keys['Space'] };
-                players['p2'].inputs = { l: keys['ArrowLeft'], r: keys['ArrowRight'], j: keys['ArrowUp'], s: keys['Enter'] };
-            } else {
-                const pid = myId || 'p1';
-                players[pid].inputs = { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] };
-            }
+nextMission() { ui.mission++; document.getElementById('win-screen').classList.add('hidden'); this.launch(this.players['p1'].cls); },
 
-            for (let id in players) {
-                let p = players[id];
-                if (p.dead) {
-                    if (Date.now() > p.respawnAt) {
-                        p.dead = false; p.hp = 100; p.vx = 0; p.vy = 0;
-                        let safeX = cameraX1 + 100;
-                        let plat = platforms.find(pl => safeX >= pl.x && safeX <= pl.x + pl.w);
-                        p.x = plat ? safeX : platforms[0].x + 50;
-                        p.y = canvas.height - 300;
-                    }
-                    continue;
-                }
+drawView(camX) {
+const sx = (Math.random()-0.5)*this.shake;
+const sy = (Math.random()-0.5)*this.shake;
+ctx.save(); ctx.translate(sx, sy);
 
-                if (p.inputs.l) p.vx -= 1.3; if (p.inputs.r) p.vx += 1.3;
-                if (p.inputs.j && p.grounded) { p.vy = SETTINGS.jumpPower; p.grounded = false; }
-                p.vx *= SETTINGS.friction; p.vy += SETTINGS.gravity;
-                p.x += p.vx; p.y += p.vy;
-                p.grounded = false;
+this.bgs.forEach(b => { ctx.fillStyle = '#0a0a0f'; ctx.fillRect(b.x - camX * b.s, canvas.height - b.h, b.w, b.h); });
+this.platforms.forEach(p => {
+ctx.fillStyle = '#111'; ctx.fillRect(p.x - camX, p.y, p.w, p.h);
+ctx.fillStyle = '#ff003c'; ctx.fillRect(p.x - camX, p.y, p.w, 4);
+});
 
-                platforms.forEach(plat => {
-                    if (p.x + 30 > plat.x && p.x < plat.x + plat.w && p.y + 50 > plat.y && p.y + 50 < plat.y + 30 && p.vy >= 0) {
-                        p.y = plat.y - 50; p.vy = 0; p.grounded = true;
-                    }
-                });
+if(this.missions[ui.mission].tutorial) {
+ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+ctx.fillText(">> WASD TO MOVE", 100-camX, canvas.height-250);
+ctx.fillText(">> SPACE TO SHOOT", 800-camX, canvas.height-250);
+}
 
-                if (p.y > canvas.height + 100) p.hp = 0; 
-                if (p.hp <= 0) { p.dead = true; p.respawnAt = Date.now() + 5000; playSFX(50, 'sawtooth', 0.5); }
+this.zombies.forEach(z => { ctx.fillStyle = z.color; ctx.fillRect(z.x-camX, z.y, z.w, z.h); ctx.fillStyle='#f00'; ctx.fillRect(z.x-camX+5, z.y+10, 5, 5); });
+this.bullets.forEach(b => { ctx.fillStyle = '#00f2ff'; ctx.fillRect(b.x-camX, b.y, 12, 4); ctx.shadowBlur=10; ctx.shadowColor='#00f2ff'; });
+ctx.shadowBlur = 0;
+this.particles.forEach(p => { ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(p.x-camX, p.y, 4, 4); }); ctx.globalAlpha = 1;
 
-                if (p.inputs.s && Date.now() - (p.lastShot || 0) > 250) {
-                    bullets.push({ x: p.x + 15, y: p.y + 20, vx: p.vx >= 0 ? 16 : -16, owner: p.id });
-                    p.lastShot = Date.now();
-                    playSFX(200, 'square', 0.1);
-                }
-            }
+for(let id in this.players) {
+let p = this.players[id]; ctx.fillStyle = p.color; ctx.fillRect(p.x-camX, p.y, 30, 50);
+ctx.fillStyle = '#fff'; ctx.fillRect(p.x-camX+(p.vx>=0?20:4), p.y+10, 6, 6);
+}
+ctx.restore();
+},
 
-            if (!isPVP && Math.random() < SETTINGS.spawnRate) spawnZombie();
-            
-            zombies.forEach((z, zi) => {
-                z.x -= z.speed; z.vy += SETTINGS.gravity; z.y += z.vy;
-                platforms.forEach(plat => {
-                    if (z.x + z.w > plat.x && z.x < plat.x + plat.w && z.y + z.h > plat.y && z.y + z.h < plat.y + 30) { z.y = plat.y - z.h; z.vy = 0; }
-                });
-                for (let id in players) {
-                    let p = players[id];
-                    if (!p.dead && Math.abs(p.x - z.x) < 40 && Math.abs(p.y - z.y) < 50) p.hp -= 1.2;
-                }                if (z.y > canvas.height + 200 || z.x < cameraX1 - 500) zombies.splice(zi, 1);
-            });
+draw() {
+ctx.fillStyle = '#050508'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+if (!this.active) return;
+if (this.isSplit) {
+ctx.save(); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip(); this.drawView(this.cameraX1); ctx.restore();
+ctx.save(); ctx.translate(canvas.width/2, 0); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip(); this.drawView(this.cameraX2); ctx.restore();
+ctx.fillStyle='#ff003c'; ctx.fillRect(canvas.width/2-1, 0, 2, canvas.height);
+} else this.drawView(this.cameraX1);
 
-            bullets.forEach((b, bi) => {
-                b.x += b.vx;
-                zombies.forEach((z, zi) => {
-                    if (Math.abs(b.x - z.x) < z.w && Math.abs(b.y - z.y) < z.h) {
-                        z.hp -= 1; bullets.splice(bi, 1);
-                        if (z.hp <= 0) zombies.splice(zi, 1);
-                    }
-                });
-                if (isPVP) {
-                    for (let id in players) {
-                        let p = players[id];
-                        if (!p.dead && p.id !== b.owner && Math.abs(b.x - p.x) < 30 && Math.abs(b.y - p.y) < 50) {
-                            p.hp -= 20; bullets.splice(bi, 1);
-                        }
-                    }                }
-                if (Math.abs(b.x - cameraX1) > 2500) bullets.splice(bi, 1);
-            });
+const stats = document.getElementById('stats-list'); stats.innerHTML = '';
+for (let id in this.players) {
+const p = this.players[id]; const card = document.createElement('div'); card.className = 'hp-card'; card.style.borderColor = p.color;
+card.innerHTML = `<span style="color:${p.color}">${p.cls.toUpperCase()}</span>: ${Math.ceil(p.hp)} HP`;
+stats.appendChild(card);
+}
+const mis = this.missions[ui.mission];
+document.getElementById('obj-ui').innerText = mis.targetDist ? `PROGRESS: ${Math.floor((this.players['p1'].x/mis.targetDist)*100)}%` : `KILLS: ${this.kills}/${mis.targetKills}`;
+},
 
-            if (peer) clientConns.forEach(c => { if(c.open) c.send({ type:'SYNC', players, zombies, bullets, platforms, isPVP }); });
-        } else if (hostConn && hostConn.open) {
-            hostConn.send({ type: 'INPUT', inputs: { l: keys['KeyA'] || keys['ArrowLeft'], r: keys['KeyD'] || keys['ArrowRight'], j: keys['KeyW'] || keys['ArrowUp'], s: keys['Space'] || keys['Enter'] }});
-        }
+loop() { this.update(); this.draw(); if(this.active) requestAnimationFrame(() => this.loop()); }
+};
 
-        let me = players[myId] || players['p1'];
-        if (me) {
-            cameraX1 += (me.x - (isSplit ? canvas.width/4 : canvas.width/2) - cameraX1) * 0.1;
-            if (me.dead) {
-                const left = Math.ceil((me.respawnAt - Date.now()) / 1000);
-                document.getElementById('respawn-timer').classList.remove('hidden');
-                document.getElementById('respawn-timer').innerText = left > 0 ? left : 0;
-            } else document.getElementById('respawn-timer').classList.add('hidden');
-        }
-        if (isSplit && players['p2']) cameraX2 += (players['p2'].x - canvas.width/4 - cameraX2) * 0.1;
-    }
-
-    function drawWorld(camX) {
-        platforms.forEach(p => {
-            if (p.x - camX < canvas.width && p.x + p.w - camX > 0) {
-                ctx.fillStyle = COLORS.ground;
-                ctx.fillRect(p.x - camX, p.y, p.w, p.h);
-                ctx.fillStyle = '#ff4d4d'; 
-                ctx.fillRect(p.x - camX, p.y, p.w, 4); 
-            }
-        });
-
-        bullets.forEach(b => {            ctx.fillStyle = '#fff';
-            ctx.fillRect(b.x - camX, b.y, 12, 4);
-            ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
-        });
-        ctx.shadowBlur = 0;
-
-        zombies.forEach(z => {            ctx.fillStyle = z.color;
-            ctx.beginPath();
-            if(ctx.roundRect) ctx.roundRect(z.x - camX, z.y, z.w, z.h, 4); else ctx.rect(z.x - camX, z.y, z.w, z.h);
-            ctx.fill();
-        });
-
-        for (let id in players) {
-            let p = players[id];
-            if (!p.dead) {
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                if(ctx.roundRect) ctx.roundRect(p.x - camX, p.y, 30, 50, 4); else ctx.rect(p.x - camX, p.y, 30, 50);
-                ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.fillRect(p.x - camX + (p.vx >= 0 ? 18 : 5), p.y + 10, 6, 6);
-            }        }
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Background Fog Effect
-        ctx.fillStyle = 'rgba(20,0,0,0.2)';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-
-        if (!gameActive) return;
-
-        if (isSplit) {
-            ctx.save(); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip();
-            drawWorld(cameraX1); ctx.restore();
-            ctx.save(); ctx.translate(canvas.width/2, 0); ctx.beginPath(); ctx.rect(0,0,canvas.width/2,canvas.height); ctx.clip();
-            drawWorld(cameraX2); ctx.restore();
-            ctx.fillStyle = '#ff4d4d'; ctx.fillRect(canvas.width/2-1, 0, 2, canvas.height);
-        } else drawWorld(cameraX1);
-
-        const stats = document.getElementById('stats-list');
-        stats.innerHTML = '';
-        for (let id in players) {
-            const p = players[id];
-            const card = document.createElement('div'); card.className = 'hp-card';
-            card.style.borderLeftColor = p.color;            card.innerHTML = `<div style="font-size:10px; color:#555">${id.substring(0,8).toUpperCase()}</div>${p.dead ? 'SIGNAL LOST' : Math.ceil(p.hp) + ' %'}`;
-            stats.appendChild(card);
-        }
-    }
-
-    function loop() { update(); draw(); requestAnimationFrame(loop); }
-    loop();
-    window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+const keys = {};
+window.onkeydown = e => { keys[e.code] = true; if(e.code === 'Escape') location.reload(); };
+window.onkeyup = e => keys[e.code] = false;
 </script>
 </body>
+</html>
