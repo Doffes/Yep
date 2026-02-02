@@ -10,13 +10,18 @@
         
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 100; color: #FFD90F;
         }
         
         #ui {
             position: absolute; top: 20px; width: 100%; text-align: center; color: #FFD90F; 
             font-size: 24px; pointer-events: none; z-index: 5; text-shadow: 2px 2px #f00;
+        }
+
+        #leaderboard {
+            margin-top: 20px; padding: 10px; border: 2px solid #FFD90F;
+            width: 300px; text-align: left; background: rgba(255,0,0,0.1);
         }
 
         #qte {
@@ -28,7 +33,7 @@
         button {
             padding: 15px 30px; font-size: 24px; background: #FFD90F; border: none;
             cursor: pointer; font-family: 'Courier New', Courier, monospace; font-weight: bold;
-            box-shadow: 5px 5px 0 #ff0000;
+            box-shadow: 5px 5px 0 #ff0000; margin: 10px;
         }
 
         button:hover { background: #fff; }
@@ -39,8 +44,14 @@
 
     <div id="overlay">
         <h1>BART'S LOBOTOMY</h1>
-        <h2>A Game By Max And Aiden </h2>
-        <p style="color: #fff;">SPACE: FLIP | CLICK: FIRE | SHIFT: BOOST</p>
+        <h2 style="margin:0;">A Game By Max And Aiden</h2>
+        
+        <div id="leaderboard">
+            <div style="text-align:center; text-decoration: underline; margin-bottom:5px;">TOP BRAINS</div>
+            <div id="highscore-list">1. No Data - 000</div>
+        </div>
+
+        <p style="color: #fff; margin-top:20px;">SPACE: FLIP | CLICK: FIRE | SHIFT: BOOST</p>
         <button onclick="startGame()">ENTER THE VOID</button>
     </div>
 
@@ -54,6 +65,33 @@
 <script type="module">
 import * as THREE from 'three';
 
+// --- HIGHSCORE SYSTEM ---
+function getHighscores() {
+    const scores = localStorage.getItem('bart_scores');
+    return scores ? JSON.parse(scores) : [];
+}
+
+function saveHighscore(name, score) {
+    let scores = getHighscores();
+    scores.push({name, score});
+    scores.sort((a, b) => b.score - a.score);
+    scores = scores.slice(0, 5); // Keep top 5
+    localStorage.setItem('bart_scores', JSON.stringify(scores));
+}
+
+function updateLeaderboardUI() {
+    const scores = getHighscores();
+    const list = document.getElementById('highscore-list');
+    if (scores.length === 0) {
+        list.innerHTML = "1. Empty Slot - 000";
+        return;
+    }
+    list.innerHTML = scores.map((s, i) => `${i+1}. ${s.name.substring(0,8)} - ${s.score}`).join('<br>');
+}
+
+updateLeaderboardUI();
+
+// --- GAME LOGIC ---
 let gameActive = false;
 let score = 0, speed = 0.4, velocity = 0, gravity = -0.015;
 let qteActive = false, currentQTEKey = '';
@@ -65,12 +103,10 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// --- LIGHTING ---
 const sun = new THREE.PointLight(0xffffff, 100, 100);
 sun.position.set(0, 0, 10);
 scene.add(sun, new THREE.AmbientLight(0x404040));
 
-// --- ASSETS ---
 const bartMat = new THREE.MeshStandardMaterial({color: 0xFFD90F, roughness: 0});
 const fleshMat = new THREE.MeshStandardMaterial({color: 0x882222, metalness: 0.5});
 
@@ -80,11 +116,9 @@ bart.add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.8), new THREE.MeshStan
 bart.position.x = -5;
 scene.add(bart);
 
-// --- SCARY AUDIO (FM SYNTH SCREAM) ---
 function playScream() {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const out = ctx.destination;
-    
     const carrier = ctx.createOscillator();
     const modulator = ctx.createOscillator();
     const modGain = ctx.createGain();
@@ -100,17 +134,14 @@ function playScream() {
         return curve;
     }
 
-    distortion.curve = makeDist(400);
+    distortion.curve = makeDist(600);
     carrier.type = 'sawtooth';
     modulator.type = 'square';
-    
-    carrier.frequency.setValueAtTime(300, ctx.currentTime);
-    carrier.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
-    
-    modulator.frequency.setValueAtTime(50, ctx.currentTime);
-    modGain.gain.setValueAtTime(1000, ctx.currentTime);
-
-    mainGain.gain.setValueAtTime(1.5, ctx.currentTime);
+    carrier.frequency.setValueAtTime(400, ctx.currentTime);
+    carrier.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.2);
+    modulator.frequency.setValueAtTime(60, ctx.currentTime);
+    modGain.gain.setValueAtTime(1200, ctx.currentTime);
+    mainGain.gain.setValueAtTime(2.0, ctx.currentTime);
     mainGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
 
     modulator.connect(modGain);
@@ -118,14 +149,9 @@ function playScream() {
     carrier.connect(distortion);
     distortion.connect(mainGain);
     mainGain.connect(out);
-
-    carrier.start();
-    modulator.start();
-    carrier.stop(ctx.currentTime + 1.2);
-    modulator.stop(ctx.currentTime + 1.2);
+    carrier.start(); modulator.start();
 }
 
-// --- LOGIC ---
 window.startGame = () => {
     document.getElementById('overlay').style.display = 'none';
     gameActive = true;
@@ -192,7 +218,7 @@ function animate() {
 
     if (Math.random() < 0.04) {
         const obs = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), fleshMat);
-        obs.position.set(25, Math.random() > 0.5 ? 4 : -4, 0);
+        obs.position.set(25, (Math.random() * 8) - 4, 0);
         scene.add(obs);
         obstacles.push(obs);
     }
@@ -217,7 +243,8 @@ function endGame() {
         homer.rotation.y += 0.4;
         if (z > 20) {
             clearInterval(scare);
-            alert("SURGERY FAILED. FINAL SCORE: " + score);
+            const name = prompt("SURGERY FAILED. ENTER YOUR NAME:", "PATIENT");
+            if (name) saveHighscore(name, score);
             location.reload();
         }
         renderer.render(scene, camera);
