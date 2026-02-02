@@ -1,34 +1,236 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Ship To It - Company Packing List</title>
-  <link href="https://fonts.googleapis.com/css?family=Lato: 100,300,400,700|Luckiest+Guy|Oxygen:300,400" rel="stylesheet">
-  <link href="style.css" type="text/css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bart's Lobotomy</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100; color: #FFD90F;
+        }
+        
+        #ui {
+            position: absolute; top: 20px; width: 100%; text-align: center; color: #FFD90F; 
+            font-size: 24px; pointer-events: none; z-index: 5; text-shadow: 2px 2px #f00;
+        }
+
+        #qte {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 180px; color: #fff; display: none; font-weight: bold; z-index: 10;
+            text-shadow: 0 0 50px #ff0000;
+        }
+
+        button {
+            padding: 15px 30px; font-size: 24px; background: #FFD90F; border: none;
+            cursor: pointer; font-family: 'Courier New', Courier, monospace; font-weight: bold;
+            box-shadow: 5px 5px 0 #ff0000;
+        }
+
+        button:hover { background: #fff; }
+        .inverted { filter: invert(100%) contrast(120%); }
+    </style>
 </head>
 <body>
 
-  <ul class="navigation">
-    <li><img src="https://content.codecademy.com/courses/web-101/unit-9/htmlcss1-img_logo-shiptoit.png" height="20px;"></li>
-    <li class="active">Action List</li>
-    <li>Profiles</li>
-    <li>Settings</li>
-  </ul>
+    <div id="overlay">
+        <h1>BART'S LOBOTOMY</h1>
+        <h2>A Game By Max And Aiden </h2>
+        <p style="color: #fff;">SPACE: FLIP | CLICK: FIRE | SHIFT: BOOST</p>
+        <button onclick="startGame()">ENTER THE VOID</button>
+    </div>
 
-  <div class="search">Search the table</div>
+    <div id="ui">SCORE: 0 | BRAIN STATUS: STABLE</div>
+    <div id="qte">!</div>
 
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
 
-<table>
-  <tr>
-  <th scope="col">Company Name</th>
-  <th scope="col">Number of Items to Ship</th>
-  <th scope="col">Next Action</th>
-  </tr>
-  <tr>
-  <td>Adam's Greenworks</td>
-  <td>14</td>
-  <td>Package Items</td>
-</tr>
-</table>
+<script type="module">
+import * as THREE from 'three';
 
+let gameActive = false;
+let score = 0, speed = 0.4, velocity = 0, gravity = -0.015;
+let qteActive = false, currentQTEKey = '';
+const obstacles = [], bullets = [];
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// --- LIGHTING ---
+const sun = new THREE.PointLight(0xffffff, 100, 100);
+sun.position.set(0, 0, 10);
+scene.add(sun, new THREE.AmbientLight(0x404040));
+
+// --- ASSETS ---
+const bartMat = new THREE.MeshStandardMaterial({color: 0xFFD90F, roughness: 0});
+const fleshMat = new THREE.MeshStandardMaterial({color: 0x882222, metalness: 0.5});
+
+const bart = new THREE.Group();
+bart.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), bartMat));
+bart.add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.8), new THREE.MeshStandardMaterial({color: 0x32CD32})));
+bart.position.x = -5;
+scene.add(bart);
+
+// --- SCARY AUDIO (FM SYNTH SCREAM) ---
+function playScream() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const out = ctx.destination;
+    
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const mainGain = ctx.createGain();
+    const distortion = ctx.createWaveShaper();
+
+    function makeDist(amount) {
+        let n = 44100, curve = new Float32Array(n), deg = Math.PI / 180, i = 0, x;
+        for ( ; i < n; ++i ) {
+            x = i * 2 / n - 1;
+            curve[i] = (3 + amount) * x * 20 * deg / (Math.PI + amount * Math.abs(x));
+        }
+        return curve;
+    }
+
+    distortion.curve = makeDist(400);
+    carrier.type = 'sawtooth';
+    modulator.type = 'square';
+    
+    carrier.frequency.setValueAtTime(300, ctx.currentTime);
+    carrier.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
+    
+    modulator.frequency.setValueAtTime(50, ctx.currentTime);
+    modGain.gain.setValueAtTime(1000, ctx.currentTime);
+
+    mainGain.gain.setValueAtTime(1.5, ctx.currentTime);
+    mainGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    carrier.connect(distortion);
+    distortion.connect(mainGain);
+    mainGain.connect(out);
+
+    carrier.start();
+    modulator.start();
+    carrier.stop(ctx.currentTime + 1.2);
+    modulator.stop(ctx.currentTime + 1.2);
+}
+
+// --- LOGIC ---
+window.startGame = () => {
+    document.getElementById('overlay').style.display = 'none';
+    gameActive = true;
+    animate();
+};
+
+function triggerQTE() {
+    if (qteActive || !gameActive) return;
+    qteActive = true;
+    currentQTEKey = ['W','A','S','D','X'][Math.floor(Math.random()*5)];
+    const el = document.getElementById('qte');
+    el.innerText = currentQTEKey;
+    el.style.display = 'block';
+    setTimeout(() => { if(qteActive) endGame(); }, 800);
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') gravity *= -1;
+    if (qteActive && e.key.toUpperCase() === currentQTEKey) {
+        qteActive = false;
+        document.getElementById('qte').style.display = 'none';
+        score += 150;
+    }
+});
+
+window.addEventListener('mousedown', () => {
+    if (!gameActive) return;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color: 0x00ffff}));
+    b.position.copy(bart.position);
+    scene.add(b);
+    bullets.push(b);
+});
+
+function animate() {
+    if (!gameActive) return;
+    requestAnimationFrame(animate);
+
+    if (Math.random() < 0.006) triggerQTE();
+    if (Math.random() < 0.01) {
+        document.body.classList.add('inverted');
+        setTimeout(() => document.body.classList.remove('inverted'), 80);
+    }
+
+    velocity += gravity;
+    bart.position.y += velocity;
+    bart.position.y = Math.max(-4.5, Math.min(4.5, bart.position.y));
+
+    bullets.forEach((b, bi) => {
+        b.position.x += 1;
+        obstacles.forEach((o, oi) => {
+            if (b.position.distanceTo(o.position) < 2) {
+                scene.remove(o, b);
+                obstacles.splice(oi, 1);
+                bullets.splice(bi, 1);
+            }
+        });
+    });
+
+    obstacles.forEach((o, i) => {
+        o.position.x -= speed;
+        if (bart.position.distanceTo(o.position) < 1.6) endGame();
+        if (o.position.x < -20) { scene.remove(o); obstacles.splice(i, 1); score += 10; }
+    });
+
+    if (Math.random() < 0.04) {
+        const obs = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), fleshMat);
+        obs.position.set(25, Math.random() > 0.5 ? 4 : -4, 0);
+        scene.add(obs);
+        obstacles.push(obs);
+    }
+
+    document.getElementById('ui').innerText = `SCORE: ${score} | BRAIN STATUS: ${score > 1000 ? 'DECAYING' : 'STABLE'}`;
+    renderer.render(scene, camera);
+}
+
+function endGame() {
+    gameActive = false;
+    document.getElementById('qte').style.display = 'none';
+    playScream();
+
+    const homer = new THREE.Mesh(new THREE.IcosahedronGeometry(5, 1), new THREE.MeshBasicMaterial({color: 0xFFD90F, wireframe: true}));
+    homer.position.set(0, 0, 5);
+    scene.add(homer);
+
+    let z = 5;
+    const scare = setInterval(() => {
+        z += 1.5;
+        homer.position.z = z;
+        homer.rotation.y += 0.4;
+        if (z > 20) {
+            clearInterval(scare);
+            alert("SURGERY FAILED. FINAL SCORE: " + score);
+            location.reload();
+        }
+        renderer.render(scene, camera);
+    }, 16);
+}
+
+camera.position.z = 12;
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
 </body>
 </html>
